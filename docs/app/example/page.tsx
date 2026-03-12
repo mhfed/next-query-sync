@@ -1,4 +1,5 @@
 'use client'
+import Link from 'next/link'
 import { Suspense } from 'react'
 import {
   useQueryState,
@@ -276,9 +277,9 @@ function MultiStateDemo() {
           >→</button>
         </div>
         <div className="mt-2 p-3 bg-gray-50 rounded-lg text-xs font-mono text-gray-600 space-y-0.5">
-          <p>sort: <span className="text-blue-600">"{sort}"</span></p>
+          <p>sort: <span className="text-blue-600">{JSON.stringify(sort)}</span></p>
           <p>pg: <span className="text-orange-600">{pg}</span></p>
-          <p>s: <span className="text-purple-600">{filters.s === null ? 'null' : `"${filters.s}"`}</span></p>
+          <p>s: <span className="text-purple-600">{filters.s === null ? 'null' : JSON.stringify(filters.s)}</span></p>
         </div>
       </div>
     </div>
@@ -301,6 +302,12 @@ export default function Page() {
       <div className="min-h-screen bg-gray-50 font-sans">
         {/* Header */}
         <header className="border-b bg-white px-6 py-5">
+          <Link
+            href="/"
+            className="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
+          >
+            ← Back to docs
+          </Link>
           <h1 className="text-2xl font-black text-gray-900">
             next-query-sync{' '}
             <span className="ml-2 text-sm font-medium text-gray-400">example</span>

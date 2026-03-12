@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useState, useEffect, Suspense } from 'react'
 import {
   useQueryState,
@@ -9,7 +10,6 @@ import {
   parseAsBoolean,
   parseAsArrayOf,
   withDefault,
-  type Parser,
 } from 'next-query-sync'
 import {
   ShieldCheck,
@@ -23,7 +23,6 @@ import {
   Search,
   ChevronLeft,
   ChevronRight,
-  SlidersHorizontal,
   Play,
   Code2,
   BookOpen,
@@ -604,10 +603,10 @@ function MultiParamsDemo() {
       </div>
 
       <div className="p-4 rounded-xl border border-white/8 bg-white/3 text-xs font-mono space-y-1">
-        <p className="text-zinc-500">// all values in one object:</p>
-        <p><span className="text-pink-400">sort</span>: <span className="text-yellow-400">"{sort}"</span></p>
+        <p className="text-zinc-500">{'// all values in one object:'}</p>
+        <p><span className="text-pink-400">sort</span>: <span className="text-yellow-400">{JSON.stringify(sort)}</span></p>
         <p><span className="text-pink-400">pg</span>: <span className="text-orange-400">{pg}</span></p>
-        <p><span className="text-pink-400">s</span>: <span className="text-violet-400">{filters.s === null ? 'null' : `"${filters.s}"`}</span></p>
+        <p><span className="text-pink-400">s</span>: <span className="text-violet-400">{filters.s === null ? 'null' : JSON.stringify(filters.s)}</span></p>
       </div>
 
       <p className="text-xs text-zinc-500">
@@ -947,6 +946,7 @@ export default function Page() {
         </span>
         <div className="flex items-center gap-5">
           <a href="#examples" className="hidden sm:block text-sm text-zinc-400 hover:text-white transition-colors">Examples</a>
+          <Link href="/example" className="hidden sm:block text-sm text-zinc-400 hover:text-white transition-colors">Playground</Link>
           <a href="#api" className="hidden sm:block text-sm text-zinc-400 hover:text-white transition-colors">API</a>
           <a href="#how-it-works" className="hidden sm:block text-sm text-zinc-400 hover:text-white transition-colors">How It Works</a>
           <a
@@ -991,6 +991,12 @@ export default function Page() {
           >
             Live Examples <ArrowRight size={16} />
           </a>
+          <Link
+            href="/example"
+            className="flex items-center gap-2 px-7 py-3 rounded-xl border border-violet-500/25 bg-violet-500/8 text-violet-200 font-semibold text-sm hover:border-violet-400/40 hover:text-white transition-all duration-200"
+          >
+            <Play size={16} /> Open Playground
+          </Link>
           <a
             href="#api"
             className="flex items-center gap-2 px-7 py-3 rounded-xl border border-white/15 text-zinc-300 font-semibold text-sm hover:border-white/30 hover:text-white transition-all duration-200"
@@ -1000,6 +1006,13 @@ export default function Page() {
         </div>
 
         <InstallBox />
+        <p className="mt-4 text-sm text-zinc-500">
+          Want the standalone interactive demo? Open the{' '}
+          <Link href="/example" className="text-violet-400 hover:text-violet-300 transition-colors">
+            `/example`
+          </Link>{' '}
+          playground route.
+        </p>
       </section>
 
       {/* ── FEATURES ─────────────────────────────────────────── */}
@@ -1183,6 +1196,7 @@ export default function Page() {
           </div>
           <div className="flex items-center gap-6">
             <a href="#examples" className="hover:text-white transition-colors">Examples</a>
+            <Link href="/example" className="hover:text-white transition-colors">Playground</Link>
             <a href="#api" className="hover:text-white transition-colors">API</a>
             <a
               href="https://www.npmjs.com/package/next-query-sync"
