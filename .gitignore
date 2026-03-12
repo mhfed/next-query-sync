@@ -1,2 +1,34 @@
-example/node_modules/
-packages/node_modules/
+
+# ==============================
+# Global Rules (Áp dụng cho mọi thư mục)
+# ==============================
+**/node_modules/
+**/.DS_Store
+**/.env
+**/.env.local
+**/.env.development.local
+**/.env.test.local
+**/.env.production.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ==============================
+# Next.js (Dành cho docs/ và example/)
+# ==============================
+**/.next/
+**/out/
+**/build/
+
+# ==============================
+# Build output (Dành cho thư viện trong packages/)
+# ==============================
+packages/dist/
+packages/*.tsbuildinfo
+**/*.tsbuildinfo
+
+# ==============================
+# Vercel / Deployment
+# ==============================
+**/.vercel/
