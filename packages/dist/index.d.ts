@@ -46,11 +46,11 @@ declare function useQueryState<T>(key: string, parser: ParserWithDefault<T>, opt
 declare function useQueryState<T>(key: string, parser: Parser<T>, options?: UseQueryStateOptions): [T | null, (updater: Updater<T>) => void];
 
 /** Infers the value type of each parser in a schema object. */
-type ParsedValues<Schema extends Record<string, Parser<unknown>>> = {
+type ParsedValues<Schema extends Record<string, Parser<any>>> = {
     [K in keyof Schema]: Schema[K] extends Parser<infer T> ? T | null : never;
 };
 /** Partial updater object for useQueryStates. */
-type PartialUpdater<Schema extends Record<string, Parser<unknown>>> = Partial<{
+type PartialUpdater<Schema extends Record<string, Parser<any>>> = Partial<{
     [K in keyof Schema]: Schema[K] extends Parser<infer T> ? T | null | ((prev: T | null) => T | null) : never;
 }>;
 interface UseQueryStatesOptions {
@@ -68,6 +68,6 @@ interface UseQueryStatesOptions {
  * // params.page → number | null
  * // params.search → string | null
  */
-declare function useQueryStates<Schema extends Record<string, Parser<unknown>>>(schema: Schema, options?: UseQueryStatesOptions): [ParsedValues<Schema>, (updater: PartialUpdater<Schema>) => void];
+declare function useQueryStates<Schema extends Record<string, Parser<any>>>(schema: Schema, options?: UseQueryStatesOptions): [ParsedValues<Schema>, (updater: PartialUpdater<Schema>) => void];
 
 export { type HistoryMode, type Parser, type ParserWithDefault, type UseQueryStateOptions, type UseQueryStatesOptions, parseAsArrayOf, parseAsBoolean, parseAsFloat, parseAsInteger, parseAsString, useQueryState, useQueryStates, withDefault };

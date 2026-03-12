@@ -8,12 +8,14 @@ import type { Parser } from './parsers';
 // ---------------------------------------------------------------------------
 
 /** Infers the value type of each parser in a schema object. */
-type ParsedValues<Schema extends Record<string, Parser<unknown>>> = {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type ParsedValues<Schema extends Record<string, Parser<any>>> = {
   [K in keyof Schema]: Schema[K] extends Parser<infer T> ? T | null : never;
 };
 
 /** Partial updater object for useQueryStates. */
-type PartialUpdater<Schema extends Record<string, Parser<unknown>>> = Partial<{
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type PartialUpdater<Schema extends Record<string, Parser<any>>> = Partial<{
   [K in keyof Schema]: Schema[K] extends Parser<infer T>
     ? T | null | ((prev: T | null) => T | null)
     : never;
@@ -35,7 +37,8 @@ export interface UseQueryStatesOptions {
  * // params.page → number | null
  * // params.search → string | null
  */
-export function useQueryStates<Schema extends Record<string, Parser<unknown>>>(
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function useQueryStates<Schema extends Record<string, Parser<any>>>(
   schema: Schema,
   options: UseQueryStatesOptions = {}
 ): [ParsedValues<Schema>, (updater: PartialUpdater<Schema>) => void] {
