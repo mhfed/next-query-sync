@@ -110,10 +110,10 @@ var import_react = require("react");
 var subscribe = (callback) => {
   if (typeof window === "undefined") return () => {
   };
-  window.addEventListener("nuqschim_update", callback);
+  window.addEventListener("next-query-sync_update", callback);
   window.addEventListener("popstate", callback);
   return () => {
-    window.removeEventListener("nuqschim_update", callback);
+    window.removeEventListener("next-query-sync_update", callback);
     window.removeEventListener("popstate", callback);
   };
 };
@@ -149,7 +149,7 @@ var scheduleUrlUpdate = (key, value, options = { history: "replace" }) => {
       isScheduled = false;
       batchedParams = null;
       batchedHistory = "replace";
-      window.dispatchEvent(new Event("nuqschim_update"));
+      window.dispatchEvent(new Event("next-query-sync_update"));
     });
   }
 };

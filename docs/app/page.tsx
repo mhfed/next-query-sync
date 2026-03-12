@@ -42,9 +42,9 @@ function InstallBox() {
   return (
     <div className="inline-flex items-center gap-4 px-6 py-4 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm">
       <code className="text-sm sm:text-base font-mono text-zinc-200">
-        npm i <span className="text-violet-400">nuqschim</span>
+        npm i <span className="text-violet-400">next-query-sync</span>
       </code>
-      <CopyButton text="npm i nuqschim" />
+      <CopyButton text="npm i next-query-sync" />
     </div>
   )
 }
@@ -80,7 +80,7 @@ import {
   useQueryState,
   parseAsInteger,
   withDefault,
-} from 'nuqschim'
+} from 'next-query-sync'
 
 export function ProductList() {
   const [page, setPage] = useQueryState(
@@ -131,7 +131,7 @@ function highlightLine(line: string): string {
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
-    .replace(/('use client'|'nuqschim')/g, '<span style="color:#a78bfa">$1</span>')
+    .replace(/('use client'|'next-query-sync')/g, '<span style="color:#a78bfa">$1</span>')
     .replace(/\b(import|from|export|function|return|const|let)\b/g, '<span style="color:#60a5fa">$1</span>')
     .replace(/\b(useQueryState|parseAsInteger|withDefault)\b/g, '<span style="color:#34d399">$1</span>')
     .replace(/\b(page|setPage|history)\b/g, '<span style="color:#f9a8d4">$1</span>')
@@ -156,7 +156,7 @@ export default function Page() {
       {/* Nav */}
       <nav className="relative z-10 flex items-center justify-between px-6 sm:px-10 py-5 border-b border-white/6 backdrop-blur-sm">
         <span className="text-lg font-bold bg-gradient-to-r from-violet-400 to-blue-400 bg-clip-text text-transparent">
-          nuqschim
+          next-query-sync
         </span>
         <div className="flex items-center gap-4">
           <a href="#features" className="hidden sm:block text-sm text-zinc-400 hover:text-white transition-colors">Features</a>
@@ -184,7 +184,7 @@ export default function Page() {
         {/* Headline */}
         <h1 className="mb-6 text-6xl sm:text-8xl font-black tracking-tight leading-none">
           <span className="bg-gradient-to-r from-violet-400 via-blue-400 to-violet-300 bg-clip-text text-transparent drop-shadow-[0_0_60px_rgba(139,92,246,0.4)]">
-            nuqschim
+            next-query-sync
           </span>
         </h1>
 
@@ -224,7 +224,7 @@ export default function Page() {
       {/* ── FEATURES ─────────────────────────────────────────── */}
       <section id="features" className="relative z-10 px-6 sm:px-10 pb-28 max-w-5xl mx-auto">
         <div className="mb-12 text-center">
-          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-3">Why nuqschim?</h2>
+          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-3">Why next-query-sync?</h2>
           <p className="text-zinc-500 max-w-md mx-auto">
             Everything you need for production-grade URL state management in one tiny package.
           </p>
@@ -299,7 +299,7 @@ export default function Page() {
             <div className="mt-2 p-4 rounded-xl border border-white/8 bg-white/3">
               <p className="text-xs text-zinc-500 leading-relaxed">
                 <span className="text-zinc-300 font-medium">No Next.js router delay.</span>{' '}
-                nuqschim writes directly to{' '}
+                next-query-sync writes directly to{' '}
                 <code className="text-violet-400 bg-white/5 px-1 rounded">window.history</code> and
                 dispatches a custom event — components update without waiting for the Next.js router
                 to re-render the whole page tree.
@@ -314,11 +314,11 @@ export default function Page() {
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-zinc-500">
           <span>
             © {new Date().getFullYear()}{' '}
-            <span className="text-zinc-300 font-medium">nuqschim</span>. MIT License.
+            <span className="text-zinc-300 font-medium">next-query-sync</span>. MIT License.
           </span>
           <div className="flex items-center gap-6">
             <a
-              href="https://www.npmjs.com/package/nuqschim"
+              href="https://www.npmjs.com/package/next-query-sync"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-1.5 hover:text-white transition-colors"

@@ -16,19 +16,19 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
 
 export const metadata: Metadata = {
   metadataBase: siteUrl ? new URL(siteUrl) : undefined,
-  title: "nuqschim Docs",
-  description: "Documentation and live examples for nuqschim, a lightweight type-safe URL search params state manager for Next.js.",
+  title: "next-query-sync Docs",
+  description: "Documentation and live examples for next-query-sync, a lightweight type-safe URL search params state manager for Next.js.",
   openGraph: {
-    title: "nuqschim Docs",
-    description: "Documentation and live examples for nuqschim.",
+    title: "next-query-sync Docs",
+    description: "Documentation and live examples for next-query-sync.",
     url: siteUrl,
-    siteName: "nuqschim Docs",
+    siteName: "next-query-sync Docs",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "nuqschim Docs",
-    description: "Documentation and live examples for nuqschim.",
+    title: "next-query-sync Docs",
+    description: "Documentation and live examples for next-query-sync.",
   },
 };
 

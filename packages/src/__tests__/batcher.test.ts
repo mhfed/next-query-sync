@@ -68,15 +68,15 @@ describe('scheduleUrlUpdate', () => {
     expect(sp.get('search')).toBe('foo');
   });
 
-  it('dispatches nuqschim_update event after flush', async () => {
+  it('dispatches next-query-sync_update event after flush', async () => {
     const listener = vi.fn();
-    window.addEventListener('nuqschim_update', listener);
+    window.addEventListener('next-query-sync_update', listener);
 
     scheduleUrlUpdate('x', '1');
     await Promise.resolve();
 
     expect(listener).toHaveBeenCalledOnce();
-    window.removeEventListener('nuqschim_update', listener);
+    window.removeEventListener('next-query-sync_update', listener);
   });
 
   it('omits the ? when all params are cleared', async () => {

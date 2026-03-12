@@ -64,7 +64,7 @@ export const scheduleUrlUpdate = (
       batchedParams = null;
       batchedHistory = 'replace';
 
-      window.dispatchEvent(new Event('nuqschim_update'));
+      window.dispatchEvent(new Event('next-query-sync_update'));
     });
   }
 };

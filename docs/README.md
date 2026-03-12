@@ -1,6 +1,6 @@
-# nuqschim docs
+# next-query-sync docs
 
-This app is the documentation site for [`nuqschim`](https://github.com/mhfed/next-query-sync).
+This app is the documentation site for [`next-query-sync`](https://github.com/mhfed/next-query-sync).
 
 ## Local development
 

@@ -1,4 +1,4 @@
-# nuqschim
+# next-query-sync
 
 > A lightweight, **type-safe** URL search params state manager for Next.js — built with React 18 Concurrent Mode and production performance in mind.
 
@@ -16,9 +16,9 @@
 ## Install
 
 ```bash
-npm install nuqschim
+npm install next-query-sync
 # or
-pnpm add nuqschim
+pnpm add next-query-sync
 ```
 
 ---
@@ -27,7 +27,7 @@ pnpm add nuqschim
 
 ```tsx
 'use client'
-import { useQueryState, parseAsInteger, withDefault } from 'nuqschim'
+import { useQueryState, parseAsInteger, withDefault } from 'next-query-sync'
 import { Suspense } from 'react'
 
 function ProductList() {
@@ -136,7 +136,7 @@ const [page, setPage] = useQueryState('page', pageParser)
 Implement the `Parser<T>` interface for any custom type:
 
 ```ts
-import type { Parser } from 'nuqschim'
+import type { Parser } from 'next-query-sync'
 
 const parseAsDate: Parser<Date> = {
   parse: (v) => {
