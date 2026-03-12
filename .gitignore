@@ -32,3 +32,5 @@ packages/*.tsbuildinfo
 # Vercel / Deployment
 # ==============================
 **/.vercel/
+.vercel
+.env*.local
