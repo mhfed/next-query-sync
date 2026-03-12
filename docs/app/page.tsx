@@ -1015,6 +1015,43 @@ export default function Page() {
         </p>
       </section>
 
+      <section className="relative z-10 px-6 sm:px-10 pb-20 max-w-5xl mx-auto">
+        <div className="rounded-3xl border border-violet-500/20 bg-linear-to-r from-violet-500/10 via-blue-500/6 to-transparent p-6 sm:p-8 shadow-[0_0_60px_rgba(139,92,246,0.08)]">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+            <div className="max-w-2xl">
+              <span className="inline-flex items-center gap-2 rounded-full border border-violet-500/25 bg-violet-500/10 px-3 py-1 text-xs font-medium text-violet-300">
+                <Play size={12} />
+                Interactive playground
+              </span>
+              <h2 className="mt-4 text-2xl sm:text-3xl font-bold text-white">
+                Try the full `next-query-sync` demo in `/example`
+              </h2>
+              <p className="mt-3 text-sm sm:text-base leading-relaxed text-zinc-400">
+                Explore the dedicated playground route with live URL syncing, back/forward behavior,
+                and the full collection of interactive examples in one place.
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Link
+                href="/example"
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-linear-to-r from-violet-600 to-blue-600 px-5 py-3 text-sm font-semibold text-white hover:from-violet-500 hover:to-blue-500 transition-all duration-200 shadow-lg shadow-violet-500/20"
+              >
+                <Play size={16} />
+                Open playground
+              </Link>
+              <a
+                href="#examples"
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/12 px-5 py-3 text-sm font-semibold text-zinc-300 hover:border-white/25 hover:text-white transition-all duration-200"
+              >
+                Compare with inline examples
+                <ArrowRight size={16} />
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ── FEATURES ─────────────────────────────────────────── */}
       <section className="relative z-10 px-6 sm:px-10 pb-28 max-w-5xl mx-auto">
         <div className="mb-12 text-center">
