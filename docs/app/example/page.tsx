@@ -659,13 +659,13 @@ function Sidebar({ activeId }: { activeId: string }) {
 export default function Page() {
   const [activeId, setActiveId] = useState(EXAMPLES[0].id)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
   const observerRef = useRef<IntersectionObserver | null>(null)
 
   // Track which example is in view via IntersectionObserver
   useEffect(() => {
     observerRef.current = new IntersectionObserver(
       (entries) => {
-        // Pick the entry closest to the top of the viewport
         const visible = entries
           .filter(e => e.isIntersecting)
           .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)
@@ -684,6 +684,13 @@ export default function Page() {
     return () => observerRef.current?.disconnect()
   }, [])
 
+  // Track scroll position for nav shadow
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 8)
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-white">
 
@@ -694,7 +701,9 @@ export default function Page() {
       </div>
 
       {/* Nav */}
-      <nav className="sticky top-0 z-30 flex items-center justify-between px-4 sm:px-6 py-3.5 border-b border-white/6 backdrop-blur-md bg-[#0a0a0f]/85">
+      <nav className={`sticky top-0 z-30 flex items-center justify-between px-4 sm:px-6 py-3.5 border-b backdrop-blur-md bg-[#0a0a0f]/95 transition-shadow duration-200 ${
+        scrolled ? 'border-white/10 shadow-lg shadow-black/40' : 'border-white/6'
+      }`}>
         <div className="flex items-center gap-3">
           {/* Mobile sidebar toggle */}
           <button
