@@ -1,56 +1,56 @@
-var __defProp = Object.defineProperty;
-var __defProps = Object.defineProperties;
-var __getOwnPropDescs = Object.getOwnPropertyDescriptors;
-var __getOwnPropSymbols = Object.getOwnPropertySymbols;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __propIsEnum = Object.prototype.propertyIsEnumerable;
-var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp.call(b, prop))
-      __defNormalProp(a, prop, b[prop]);
-  if (__getOwnPropSymbols)
-    for (var prop of __getOwnPropSymbols(b)) {
-      if (__propIsEnum.call(b, prop))
-        __defNormalProp(a, prop, b[prop]);
-    }
-  return a;
-};
-var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
-
 // src/parsers.ts
-var parseAsString = {
-  parse: (v) => v,
-  serialize: (v) => v
-};
-var parseAsInteger = {
-  parse: (v) => {
+function makeParser(parseFn, serializeFn) {
+  const withDefaultFn = (defaultValue) => ({
+    parse: (v) => {
+      var _a;
+      return (_a = parseFn(v)) != null ? _a : defaultValue;
+    },
+    serialize: serializeFn,
+    withDefault: withDefaultFn,
+    defaultValue
+  });
+  return { parse: parseFn, serialize: serializeFn, withDefault: withDefaultFn };
+}
+var parseAsString = makeParser(
+  (v) => v,
+  (v) => v
+);
+var parseAsInteger = makeParser(
+  (v) => {
     if (v === null || v === "") return null;
     const parsed = parseInt(v, 10);
     return Number.isNaN(parsed) ? null : parsed;
   },
-  serialize: (v) => Math.round(v).toString()
-};
-var parseAsFloat = {
-  parse: (v) => {
+  (v) => Math.round(v).toString()
+);
+var parseAsFloat = makeParser(
+  (v) => {
     if (v === null || v === "") return null;
     const parsed = parseFloat(v);
     return Number.isNaN(parsed) ? null : parsed;
   },
-  serialize: (v) => v.toString()
-};
-var parseAsBoolean = {
-  parse: (v) => {
+  (v) => v.toString()
+);
+var parseAsBoolean = makeParser(
+  (v) => {
     if (v === null) return null;
     if (v === "true") return true;
     if (v === "false") return false;
     return null;
   },
-  serialize: (v) => v.toString()
-};
+  (v) => v.toString()
+);
+var parseAsIsoDateTime = makeParser(
+  (v) => {
+    if (v === null || v === "") return null;
+    const date = new Date(v);
+    return Number.isNaN(date.getTime()) ? null : date;
+  },
+  (v) => v.toISOString()
+);
 function parseAsArrayOf(itemParser, separator = ",") {
-  return {
-    parse: (v) => {
+  return makeParser(
+    (v) => {
       if (v === null || v === "") return null;
       const items = v.split(separator);
       const result = [];
@@ -60,21 +60,22 @@ function parseAsArrayOf(itemParser, separator = ",") {
       }
       return result.length > 0 ? result : null;
     },
-    serialize: (v) => v.map((item) => itemParser.serialize(item)).join(separator)
-  };
+    (v) => v.map((item) => itemParser.serialize(item)).join(separator)
+  );
 }
 function withDefault(parser, defaultValue) {
-  return __spreadProps(__spreadValues({}, parser), {
-    parse: (v) => {
-      var _a;
-      return (_a = parser.parse(v)) != null ? _a : defaultValue;
-    },
-    defaultValue
-  });
+  return parser.withDefault(defaultValue);
 }
 
 // src/useQuery.ts
-import { useCallback, useSyncExternalStore } from "react";
+import {
+  useCallback,
+  useSyncExternalStore,
+  startTransition as reactStartTransition,
+  useState,
+  useEffect,
+  useRef
+} from "react";
 
 // src/emitter.ts
 var subscribe = (callback) => {
@@ -125,23 +126,114 @@ var scheduleUrlUpdate = (key, value, options = { history: "replace" }) => {
 };
 
 // src/useQuery.ts
-function useQueryState(key, parser, options = {}) {
-  const { history = "replace" } = options;
+function isZodDefaultLike(v) {
+  return typeof v === "object" && v !== null && "safeParse" in v && "_def" in v && typeof v._def === "object" && "defaultValue" in v._def;
+}
+function isZodLike(v) {
+  return typeof v === "object" && v !== null && "safeParse" in v;
+}
+function zodToParser(schema) {
+  const parseFn = (v) => {
+    if (v === null || v === "") return null;
+    let raw;
+    try {
+      raw = JSON.parse(v);
+    } catch (e) {
+      return null;
+    }
+    const result = schema.safeParse(raw);
+    return result.success ? result.data : null;
+  };
+  const serializeFn = (value) => JSON.stringify(value);
+  const withDefaultFn = (defaultValue) => ({
+    parse: (v) => {
+      var _a;
+      return (_a = parseFn(v)) != null ? _a : defaultValue;
+    },
+    serialize: serializeFn,
+    withDefault: withDefaultFn,
+    defaultValue
+  });
+  return { parse: parseFn, serialize: serializeFn, withDefault: withDefaultFn };
+}
+function inferParser(defaultValue) {
+  let parseFn;
+  let serializeFn;
+  if (typeof defaultValue === "number") {
+    parseFn = (v) => {
+      if (v === null || v === "") return defaultValue;
+      const parsed = Number(v);
+      return Number.isNaN(parsed) ? defaultValue : parsed;
+    };
+    serializeFn = (v) => String(v);
+  } else if (typeof defaultValue === "boolean") {
+    parseFn = (v) => {
+      if (v === null) return defaultValue;
+      return v === "true";
+    };
+    serializeFn = (v) => String(v);
+  } else {
+    parseFn = (v) => v === null ? defaultValue : v;
+    serializeFn = (v) => String(v);
+  }
+  const withDefaultFn = (dv) => inferParser(dv);
+  return { parse: parseFn, serialize: serializeFn, withDefault: withDefaultFn, defaultValue };
+}
+function useQueryState(key, parserOrDefault, options = {}) {
+  const { history = "replace", debounce: debounceMs, startTransition: useTransition } = options;
+  let parser;
+  let primitiveDefault;
+  if (typeof parserOrDefault !== "object") {
+    primitiveDefault = parserOrDefault;
+    parser = inferParser(primitiveDefault);
+  } else if (isZodDefaultLike(parserOrDefault)) {
+    const rawDefault = parserOrDefault._def.defaultValue;
+    const defaultValue = typeof rawDefault === "function" ? rawDefault() : rawDefault;
+    parser = zodToParser(parserOrDefault).withDefault(defaultValue);
+  } else if (isZodLike(parserOrDefault)) {
+    parser = zodToParser(parserOrDefault);
+  } else {
+    parser = parserOrDefault;
+  }
   const getSnapshot = useCallback(() => {
     if (typeof window === "undefined") return null;
     return new URLSearchParams(window.location.search).get(key);
   }, [key]);
   const getServerSnapshot = () => null;
   const rawValue = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
-  const value = parser.parse(rawValue);
+  const urlValue = parser.parse(rawValue);
+  const [pending, setPending] = useState(null);
+  useEffect(() => {
+    if (pending !== null) setPending(null);
+  }, [rawValue]);
+  const timerRef = useRef(null);
+  const value = pending !== null ? pending.value : urlValue;
   const setValue = useCallback(
     (updater) => {
       const next = typeof updater === "function" ? updater(value) : updater;
-      const serialized = next === null ? null : parser.serialize(next);
-      scheduleUrlUpdate(key, serialized, { history });
+      let serialized;
+      if (primitiveDefault !== void 0 && next === primitiveDefault) {
+        serialized = null;
+      } else {
+        serialized = next === null ? null : parser.serialize(next);
+      }
+      const doUpdate = () => {
+        if (useTransition) {
+          reactStartTransition(() => scheduleUrlUpdate(key, serialized, { history }));
+        } else {
+          scheduleUrlUpdate(key, serialized, { history });
+        }
+      };
+      if (debounceMs && debounceMs > 0) {
+        if (next !== null) setPending({ value: next });
+        if (timerRef.current !== null) clearTimeout(timerRef.current);
+        timerRef.current = setTimeout(doUpdate, debounceMs);
+      } else {
+        doUpdate();
+      }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [key, value, history]
+    [key, value, history, debounceMs, useTransition]
   );
   return [value, setValue];
 }
@@ -190,10 +282,12 @@ function useQueryStates(schema, options = {}) {
   return [values, setValues];
 }
 export {
+  makeParser,
   parseAsArrayOf,
   parseAsBoolean,
   parseAsFloat,
   parseAsInteger,
+  parseAsIsoDateTime,
   parseAsString,
   useQueryState,
   useQueryStates,

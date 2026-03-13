@@ -1,15 +1,11 @@
 'use client'
 
 import Link from 'next/link'
-import { useState, useEffect, Suspense } from 'react'
+import { useState } from 'react'
 import {
-  useQueryState,
-  useQueryStates,
-  parseAsString,
-  parseAsInteger,
-  parseAsBoolean,
-  parseAsArrayOf,
   withDefault,
+  parseAsInteger,
+  parseAsString,
 } from 'next-query-sync'
 import {
   ShieldCheck,
@@ -19,14 +15,8 @@ import {
   Check,
   Github,
   Package,
-  ArrowRight,
-  Search,
-  ChevronLeft,
-  ChevronRight,
   Play,
-  Code2,
   BookOpen,
-  Link2,
 } from 'lucide-react'
 
 // ---------------------------------------------------------------------------
@@ -144,515 +134,6 @@ function CodeBlock({ code, filename }: { code: string; filename?: string }) {
   )
 }
 
-// ---------------------------------------------------------------------------
-// UrlBar — shows live search string, updates in real-time
-// ---------------------------------------------------------------------------
-function UrlBar() {
-  const [search, setSearch] = useState('')
-
-  useEffect(() => {
-    const update = () => setSearch(window.location.search)
-    update()
-    window.addEventListener('next-query-sync_update', update)
-    window.addEventListener('popstate', update)
-    return () => {
-      window.removeEventListener('next-query-sync_update', update)
-      window.removeEventListener('popstate', update)
-    }
-  }, [])
-
-  return (
-    <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-white/3 border border-white/8 text-xs font-mono overflow-hidden">
-      <Link2 size={12} className="text-zinc-600 shrink-0" />
-      <span className="text-zinc-600 shrink-0">localhost:3000</span>
-      <span className="text-violet-400 truncate">{search || '/'}</span>
-    </div>
-  )
-}
-
-// ---------------------------------------------------------------------------
-// ExampleCard — tab-switches between Live Demo and Code
-// ---------------------------------------------------------------------------
-function ExampleCard({
-  id,
-  badge,
-  title,
-  description,
-  demo,
-  code,
-  filename,
-}: {
-  id: string
-  badge: string
-  title: string
-  description: string
-  demo: React.ReactNode
-  code: string
-  filename?: string
-}) {
-  const [tab, setTab] = useState<'demo' | 'code'>('demo')
-
-  return (
-    <div id={id} className="rounded-2xl border border-white/10 bg-white/2 overflow-hidden scroll-mt-24">
-      <div className="px-6 py-5 border-b border-white/8 flex flex-col gap-1">
-        <span className="inline-flex w-fit items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-violet-500/15 text-violet-300 border border-violet-500/20">
-          {badge}
-        </span>
-        <h3 className="text-xl font-bold text-white">{title}</h3>
-        <p className="text-sm text-zinc-400 leading-relaxed">{description}</p>
-      </div>
-
-      <div className="flex border-b border-white/8">
-        {(['demo', 'code'] as const).map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`flex items-center gap-2 px-5 py-3 text-xs font-medium capitalize transition-colors ${
-              tab === t ? 'text-white border-b-2 border-violet-400' : 'text-zinc-500 hover:text-zinc-300'
-            }`}
-          >
-            {t === 'demo' ? <Play size={12} /> : <Code2 size={12} />}
-            {t === 'demo' ? 'Live Demo' : 'Code'}
-          </button>
-        ))}
-      </div>
-
-      <div className="p-6">
-        {tab === 'demo' ? (
-          <div className="space-y-4">
-            <Suspense fallback={<div className="text-zinc-500 text-sm animate-pulse">Loading…</div>}>
-              {demo}
-            </Suspense>
-            <UrlBar />
-          </div>
-        ) : (
-          <CodeBlock code={code} filename={filename} />
-        )}
-      </div>
-    </div>
-  )
-}
-
-// ---------------------------------------------------------------------------
-// Example 1 — Search input  (useQueryState + parseAsString)
-// ---------------------------------------------------------------------------
-function SearchDemo() {
-  const [q, setQ] = useQueryState('q', parseAsString)
-  return (
-    <div className="space-y-4">
-      <div className="relative">
-        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none" />
-        <input
-          type="text"
-          placeholder="Type to search…"
-          value={q ?? ''}
-          onChange={(e) => setQ(e.target.value || null)}
-          className="w-full pl-9 pr-4 py-2.5 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-violet-500/50 transition"
-        />
-      </div>
-      <p className="text-xs text-zinc-500">
-        Value:{' '}
-        <code className="text-violet-400">{q === null ? 'null' : `"${q}"`}</code>
-        {' '}—{' '}
-        {q ? `searching for "${q}"` : 'no active search (key removed from URL)'}
-      </p>
-    </div>
-  )
-}
-
-const searchCode = `'use client'
-import { useQueryState, parseAsString } from 'next-query-sync'
-import { Suspense } from 'react'
-
-function SearchBox() {
-  const [q, setQ] = useQueryState('q', parseAsString)
-  // q: string | null
-  // → null   when ?q is absent  (key removed from URL)
-  // → "hello" when ?q=hello
-
-  return (
-    <input
-      value={q ?? ''}
-      onChange={(e) => setQ(e.target.value || null)}
-      placeholder="Type to search…"
-    />
-  )
-}
-
-export default function Page() {
-  return (
-    <Suspense>
-      <SearchBox />
-    </Suspense>
-  )
-}`
-
-// ---------------------------------------------------------------------------
-// Example 2 — Pagination  (parseAsInteger + withDefault + history:'push')
-// ---------------------------------------------------------------------------
-function PaginationDemo() {
-  const [page, setPage] = useQueryState(
-    'page',
-    withDefault(parseAsInteger, 1),
-    { history: 'push' }
-  )
-  const TOTAL = 8
-
-  return (
-    <div className="space-y-5">
-      <div className="flex items-center justify-center gap-2 flex-wrap">
-        <button
-          disabled={page <= 1}
-          onClick={() => setPage(p => Math.max(1, p - 1))}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-zinc-300 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition"
-        >
-          <ChevronLeft size={16} /> Prev
-        </button>
-
-        <div className="flex gap-1">
-          {Array.from({ length: TOTAL }, (_, i) => i + 1).map(n => (
-            <button
-              key={n}
-              onClick={() => setPage(n)}
-              className={`w-9 h-9 rounded-lg text-xs font-semibold transition ${
-                n === page
-                  ? 'bg-violet-600 text-white shadow-lg shadow-violet-500/30'
-                  : 'bg-white/5 border border-white/10 text-zinc-400 hover:bg-white/10'
-              }`}
-            >
-              {n}
-            </button>
-          ))}
-        </div>
-
-        <button
-          disabled={page >= TOTAL}
-          onClick={() => setPage(p => Math.min(TOTAL, p + 1))}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-zinc-300 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition"
-        >
-          Next <ChevronRight size={16} />
-        </button>
-      </div>
-
-      <div className="p-4 rounded-xl border border-white/8 bg-white/3 text-center">
-        <p className="text-xs text-zinc-500 mb-1">Current page (TypeScript type: <code className="text-orange-400">number</code>, never null)</p>
-        <p className="text-3xl font-black text-white tabular-nums">{page}</p>
-      </div>
-
-      <p className="text-xs text-zinc-500 text-center">
-        Uses <code className="text-violet-400">history: &#39;push&#39;</code> — the Back / Forward button
-        navigates between pages.
-      </p>
-    </div>
-  )
-}
-
-const paginationCode = `'use client'
-import {
-  useQueryState,
-  parseAsInteger,
-  withDefault,
-} from 'next-query-sync'
-
-function Pagination() {
-  const [page, setPage] = useQueryState(
-    'page',
-    withDefault(parseAsInteger, 1), // default → 1
-    { history: 'push' }             // Back button works
-  )
-  // page: number  ← withDefault removes null from the type
-
-  return (
-    <div>
-      <button onClick={() => setPage(p => p - 1)}>← Prev</button>
-      <span>Page {page}</span>
-      <button onClick={() => setPage(p => p + 1)}>Next →</button>
-    </div>
-  )
-}`
-
-// ---------------------------------------------------------------------------
-// Example 3 — Boolean toggle  (parseAsBoolean + withDefault)
-// ---------------------------------------------------------------------------
-function BooleanDemo() {
-  const [dark, setDark] = useQueryState('dark', withDefault(parseAsBoolean, false))
-  const [grid, setGrid] = useQueryState('grid', withDefault(parseAsBoolean, true))
-
-  return (
-    <div className="space-y-4">
-      {[
-        { label: 'Dark mode', key: 'dark', value: dark, setter: setDark },
-        { label: 'Grid view', key: 'grid', value: grid, setter: setGrid },
-      ].map(({ label, key, value, setter }) => (
-        <div key={key} className="flex items-center justify-between p-4 rounded-xl border border-white/8 bg-white/3">
-          <div>
-            <p className="text-sm font-medium text-white">{label}</p>
-            <p className="text-xs text-zinc-500 mt-0.5">
-              <code className="text-violet-400">?{key}=</code>
-              <code className="text-orange-400">{value.toString()}</code>
-            </p>
-          </div>
-          <button
-            onClick={() => setter(v => !v)}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-              value ? 'bg-violet-600' : 'bg-zinc-700'
-            }`}
-          >
-            <span
-              className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${
-                value ? 'translate-x-6' : 'translate-x-1'
-              }`}
-            />
-          </button>
-        </div>
-      ))}
-
-      <p className="text-xs text-zinc-500">
-        <code className="text-violet-400">withDefault(parseAsBoolean, false)</code> — value is always{' '}
-        <code className="text-orange-400">boolean</code>, never null. Toggling off leaves{' '}
-        <code className="text-yellow-400">?dark=false</code> in the URL.
-      </p>
-    </div>
-  )
-}
-
-const booleanCode = `'use client'
-import {
-  useQueryState,
-  parseAsBoolean,
-  withDefault,
-} from 'next-query-sync'
-
-function Settings() {
-  const [dark, setDark] = useQueryState(
-    'dark',
-    withDefault(parseAsBoolean, false)
-  )
-  // dark: boolean  ← never null thanks to withDefault
-  // ?dark=true  → true
-  // ?dark=false → false
-  // (absent)    → false  (default)
-
-  return (
-    <button onClick={() => setDark(v => !v)}>
-      {dark ? 'Light mode' : 'Dark mode'}
-    </button>
-  )
-}`
-
-// ---------------------------------------------------------------------------
-// Example 4 — Array / multi-select  (parseAsArrayOf)
-// ---------------------------------------------------------------------------
-const ALL_TAGS = ['react', 'typescript', 'nextjs', 'tailwind', 'nodejs']
-
-function ArrayDemo() {
-  const [tags, setTags] = useQueryState('tags', parseAsArrayOf(parseAsString))
-  const selected = tags ?? []
-
-  const toggle = (tag: string) => {
-    const next = selected.includes(tag)
-      ? selected.filter(t => t !== tag)
-      : [...selected, tag]
-    setTags(next.length > 0 ? next : null)
-  }
-
-  return (
-    <div className="space-y-4">
-      <p className="text-xs text-zinc-500">Select topics (comma-separated in URL):</p>
-      <div className="flex flex-wrap gap-2">
-        {ALL_TAGS.map(tag => (
-          <button
-            key={tag}
-            onClick={() => toggle(tag)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition ${
-              selected.includes(tag)
-                ? 'border-violet-500 bg-violet-500/20 text-violet-300'
-                : 'border-white/10 bg-white/3 text-zinc-400 hover:border-white/20 hover:text-white'
-            }`}
-          >
-            {tag}
-          </button>
-        ))}
-      </div>
-
-      <div className="p-4 rounded-xl border border-white/8 bg-white/3">
-        <p className="text-xs text-zinc-500 mb-2">Parsed value (JS):</p>
-        <code className="text-sm text-violet-400">
-          {selected.length > 0 ? JSON.stringify(selected) : 'null'}
-        </code>
-      </div>
-
-      <p className="text-xs text-zinc-500">
-        Stored as <code className="text-yellow-400">?tags=react,typescript,nextjs</code> — a single comma-separated string.
-      </p>
-    </div>
-  )
-}
-
-const arrayCode = `'use client'
-import {
-  useQueryState,
-  parseAsArrayOf,
-  parseAsString,
-} from 'next-query-sync'
-
-function TagFilter() {
-  const [tags, setTags] = useQueryState(
-    'tags',
-    parseAsArrayOf(parseAsString)
-  )
-  // tags: string[] | null
-  // ?tags=react,nextjs → ['react', 'nextjs']
-  // (absent)           → null
-
-  const toggle = (tag: string) => {
-    const current = tags ?? []
-    const next = current.includes(tag)
-      ? current.filter(t => t !== tag)
-      : [...current, tag]
-    setTags(next.length > 0 ? next : null)
-  }
-
-  return (
-    <div>
-      {['react', 'typescript', 'nextjs'].map(tag => (
-        <button key={tag} onClick={() => toggle(tag)}>
-          {tag}
-        </button>
-      ))}
-    </div>
-  )
-}`
-
-// ---------------------------------------------------------------------------
-// Example 5 — Multiple params  (useQueryStates)
-// ---------------------------------------------------------------------------
-const SORT_OPTIONS = [
-  { value: 'latest', label: 'Latest' },
-  { value: 'popular', label: 'Popular' },
-  { value: 'oldest', label: 'Oldest' },
-]
-
-function MultiParamsDemo() {
-  const [filters, setFilters] = useQueryStates(
-    {
-      sort: withDefault(parseAsString, 'latest'),
-      pg: withDefault(parseAsInteger, 1),
-      s: parseAsString,
-    },
-    { history: 'push' }
-  )
-  // useQueryStates always types values as T | null; resolve null with defaults
-  const pg = filters.pg ?? 1
-  const sort = filters.sort ?? 'latest'
-
-  return (
-    <div className="space-y-4">
-      {/* Sort */}
-      <div>
-        <p className="text-xs text-zinc-500 mb-2">Sort by:</p>
-        <div className="flex gap-2">
-          {SORT_OPTIONS.map(opt => (
-            <button
-              key={opt.value}
-              onClick={() => setFilters({ sort: opt.value, pg: 1 })}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition ${
-                sort === opt.value
-                  ? 'border-violet-500 bg-violet-500/20 text-violet-300'
-                  : 'border-white/10 bg-white/3 text-zinc-400 hover:border-white/20 hover:text-white'
-              }`}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Search */}
-      <div>
-        <p className="text-xs text-zinc-500 mb-2">Search:</p>
-        <div className="relative">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none" />
-          <input
-            type="text"
-            placeholder="Type to filter…"
-            value={filters.s ?? ''}
-            onChange={(e) => setFilters({ s: e.target.value || null, pg: 1 })}
-            className="w-full pl-8 pr-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-zinc-600 focus:outline-none focus:border-violet-500/50 transition text-xs"
-          />
-        </div>
-      </div>
-
-      {/* Page */}
-      <div className="flex items-center gap-3">
-        <p className="text-xs text-zinc-500">Page:</p>
-        <button
-          disabled={pg <= 1}
-          onClick={() => setFilters({ pg: pg - 1 })}
-          className="px-3 py-1 rounded bg-white/5 border border-white/10 text-xs text-zinc-300 hover:bg-white/10 disabled:opacity-30 transition"
-        >
-          ←
-        </button>
-        <span className="text-sm font-bold text-white tabular-nums w-6 text-center">{pg}</span>
-        <button
-          onClick={() => setFilters({ pg: pg + 1 })}
-          className="px-3 py-1 rounded bg-white/5 border border-white/10 text-xs text-zinc-300 hover:bg-white/10 transition"
-        >
-          →
-        </button>
-      </div>
-
-      <div className="p-4 rounded-xl border border-white/8 bg-white/3 text-xs font-mono space-y-1">
-        <p className="text-zinc-500">{'// all values in one object:'}</p>
-        <p><span className="text-pink-400">sort</span>: <span className="text-yellow-400">{JSON.stringify(sort)}</span></p>
-        <p><span className="text-pink-400">pg</span>: <span className="text-orange-400">{pg}</span></p>
-        <p><span className="text-pink-400">s</span>: <span className="text-violet-400">{filters.s === null ? 'null' : JSON.stringify(filters.s)}</span></p>
-      </div>
-
-      <p className="text-xs text-zinc-500">
-        All three fields update in a <strong className="text-zinc-300">single</strong>{' '}
-        <code className="text-violet-400">pushState</code> call — no double navigation entries.
-      </p>
-    </div>
-  )
-}
-
-const multiParamsCode = `'use client'
-import {
-  useQueryStates,
-  parseAsString,
-  parseAsInteger,
-  withDefault,
-} from 'next-query-sync'
-
-function ProductFilters() {
-  const [filters, setFilters] = useQueryStates(
-    {
-      sort:   withDefault(parseAsString,  'latest'),
-      page:   withDefault(parseAsInteger, 1),
-      search: parseAsString,
-    },
-    { history: 'push' }
-  )
-  // filters.sort   → string       (never null)
-  // filters.page   → number       (never null)
-  // filters.search → string | null
-
-  return (
-    <div>
-      {/* One call → one history entry */}
-      <button onClick={() => setFilters({ sort: 'popular', page: 1 })}>
-        Sort by Popular
-      </button>
-      <input
-        value={filters.search ?? ''}
-        onChange={(e) =>
-          setFilters({ search: e.target.value || null, page: 1 })
-        }
-      />
-    </div>
-  )
-}`
 
 // ---------------------------------------------------------------------------
 // Example 6 — Custom parser
@@ -945,7 +426,7 @@ export default function Page() {
           next-query-sync
         </span>
         <div className="flex items-center gap-5">
-          <a href="#examples" className="hidden sm:block text-sm text-zinc-400 hover:text-white transition-colors">Examples</a>
+          <a href="/example" className="hidden sm:block text-sm text-zinc-400 hover:text-white transition-colors">Examples</a>
           <Link href="/example" className="hidden sm:block text-sm text-zinc-400 hover:text-white transition-colors">Playground</Link>
           <a href="#api" className="hidden sm:block text-sm text-zinc-400 hover:text-white transition-colors">API</a>
           <a href="#how-it-works" className="hidden sm:block text-sm text-zinc-400 hover:text-white transition-colors">How It Works</a>
@@ -985,17 +466,11 @@ export default function Page() {
         </p>
 
         <div className="mb-10 flex flex-col sm:flex-row items-center gap-4">
-          <a
-            href="#examples"
-            className="flex items-center gap-2 px-7 py-3 rounded-xl bg-linear-to-r from-violet-600 to-blue-600 text-white font-semibold text-sm hover:from-violet-500 hover:to-blue-500 transition-all duration-200 shadow-lg shadow-violet-500/25"
-          >
-            Live Examples <ArrowRight size={16} />
-          </a>
           <Link
             href="/example"
-            className="flex items-center gap-2 px-7 py-3 rounded-xl border border-violet-500/25 bg-violet-500/8 text-violet-200 font-semibold text-sm hover:border-violet-400/40 hover:text-white transition-all duration-200"
+            className="flex items-center gap-2 px-7 py-3 rounded-xl bg-linear-to-r from-violet-600 to-blue-600 text-white font-semibold text-sm hover:from-violet-500 hover:to-blue-500 transition-all duration-200 shadow-lg shadow-violet-500/25"
           >
-            <Play size={16} /> Open Playground
+            <Play size={16} /> Live Examples
           </Link>
           <a
             href="#api"
@@ -1006,50 +481,6 @@ export default function Page() {
         </div>
 
         <InstallBox />
-        <p className="mt-4 text-sm text-zinc-500">
-          Want the standalone interactive demo? Open the{' '}
-          <Link href="/example" className="text-violet-400 hover:text-violet-300 transition-colors">
-            `/example`
-          </Link>{' '}
-          playground route.
-        </p>
-      </section>
-
-      <section className="relative z-10 px-6 sm:px-10 pb-20 max-w-5xl mx-auto">
-        <div className="rounded-3xl border border-violet-500/20 bg-linear-to-r from-violet-500/10 via-blue-500/6 to-transparent p-6 sm:p-8 shadow-[0_0_60px_rgba(139,92,246,0.08)]">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-            <div className="max-w-2xl">
-              <span className="inline-flex items-center gap-2 rounded-full border border-violet-500/25 bg-violet-500/10 px-3 py-1 text-xs font-medium text-violet-300">
-                <Play size={12} />
-                Interactive playground
-              </span>
-              <h2 className="mt-4 text-2xl sm:text-3xl font-bold text-white">
-                Try the full `next-query-sync` demo in `/example`
-              </h2>
-              <p className="mt-3 text-sm sm:text-base leading-relaxed text-zinc-400">
-                Explore the dedicated playground route with live URL syncing, back/forward behavior,
-                and the full collection of interactive examples in one place.
-              </p>
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Link
-                href="/example"
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-linear-to-r from-violet-600 to-blue-600 px-5 py-3 text-sm font-semibold text-white hover:from-violet-500 hover:to-blue-500 transition-all duration-200 shadow-lg shadow-violet-500/20"
-              >
-                <Play size={16} />
-                Open playground
-              </Link>
-              <a
-                href="#examples"
-                className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/12 px-5 py-3 text-sm font-semibold text-zinc-300 hover:border-white/25 hover:text-white transition-all duration-200"
-              >
-                Compare with inline examples
-                <ArrowRight size={16} />
-              </a>
-            </div>
-          </div>
-        </div>
       </section>
 
       {/* ── FEATURES ─────────────────────────────────────────── */}
@@ -1083,91 +514,29 @@ export default function Page() {
         </div>
       </section>
 
-      {/* ── LIVE EXAMPLES ────────────────────────────────────── */}
+      {/* ── EXAMPLES CTA ─────────────────────────────────────── */}
       <section id="examples" className="relative z-10 px-6 sm:px-10 pb-28 max-w-5xl mx-auto scroll-mt-20">
-        <div className="mb-12 text-center">
-          <div className="mb-3 inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-violet-500/30 bg-violet-500/10 text-xs text-violet-300">
-            <Play size={12} />
-            Interactive
-          </div>
-          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-3">Live Examples</h2>
-          <p className="text-zinc-500 max-w-lg mx-auto">
-            Each demo below is a real component using <code className="text-violet-400">next-query-sync</code>.
-            Interact and watch the URL bar update in real-time.
-          </p>
-        </div>
-
-        {/* Nav pills for quick jump */}
-        <div className="flex flex-wrap gap-2 justify-center mb-10">
-          {[
-            { href: '#ex-search', label: 'String' },
-            { href: '#ex-pagination', label: 'Integer + push' },
-            { href: '#ex-boolean', label: 'Boolean' },
-            { href: '#ex-array', label: 'Array' },
-            { href: '#ex-multi', label: 'useQueryStates' },
-          ].map(({ href, label }) => (
-            <a
-              key={href}
-              href={href}
-              className="px-3 py-1.5 rounded-lg text-xs border border-white/10 text-zinc-400 hover:border-white/25 hover:text-white transition"
+        <div className="rounded-3xl border border-violet-500/20 bg-linear-to-r from-violet-500/10 via-blue-500/6 to-transparent p-8 sm:p-12 shadow-[0_0_60px_rgba(139,92,246,0.08)]">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+            <div className="max-w-2xl">
+              <span className="inline-flex items-center gap-2 rounded-full border border-violet-500/25 bg-violet-500/10 px-3 py-1 text-xs font-medium text-violet-300">
+                <Play size={12} />
+                9 interactive demos
+              </span>
+              <h2 className="mt-4 text-2xl sm:text-3xl font-bold text-white">Live Examples</h2>
+              <p className="mt-3 text-sm sm:text-base leading-relaxed text-zinc-400">
+                useState-like auto-inference, Zod schema validation, debounce + startTransition,
+                parser chaining, arrays, booleans and more — all with live URL syncing and runnable code.
+              </p>
+            </div>
+            <Link
+              href="/example"
+              className="shrink-0 inline-flex items-center justify-center gap-2 rounded-xl bg-linear-to-r from-violet-600 to-blue-600 px-6 py-3.5 text-sm font-semibold text-white hover:from-violet-500 hover:to-blue-500 transition-all duration-200 shadow-lg shadow-violet-500/20"
             >
-              {label}
-            </a>
-          ))}
-        </div>
-
-        <div className="space-y-8">
-
-          <ExampleCard
-            id="ex-search"
-            badge="useQueryState · parseAsString"
-            title="Search Input"
-            description="Sync a text input with a URL param. When the input is cleared the key is removed from the URL entirely (value becomes null). Typing immediately reflects in the address bar."
-            demo={<SearchDemo />}
-            code={searchCode}
-            filename="search-box.tsx"
-          />
-
-          <ExampleCard
-            id="ex-pagination"
-            badge="useQueryState · parseAsInteger · withDefault · history:'push'"
-            title="Pagination"
-            description="Integer param with a default of 1 — the value is never null in TypeScript. history:'push' creates real browser history entries, so the Back button navigates between pages."
-            demo={<PaginationDemo />}
-            code={paginationCode}
-            filename="pagination.tsx"
-          />
-
-          <ExampleCard
-            id="ex-boolean"
-            badge="useQueryState · parseAsBoolean · withDefault"
-            title="Boolean Toggles"
-            description="Two independent boolean params on the same page. withDefault(parseAsBoolean, false) means the value is always a boolean — TypeScript knows it can never be null."
-            demo={<BooleanDemo />}
-            code={booleanCode}
-            filename="settings.tsx"
-          />
-
-          <ExampleCard
-            id="ex-array"
-            badge="useQueryState · parseAsArrayOf"
-            title="Multi-Select Tags"
-            description="Array values are serialized as comma-separated strings in the URL (?tags=react,typescript,nextjs). Deselecting all removes the key. Parses back to a typed array."
-            demo={<ArrayDemo />}
-            code={arrayCode}
-            filename="tag-filter.tsx"
-          />
-
-          <ExampleCard
-            id="ex-multi"
-            badge="useQueryStates · multiple parsers"
-            title="Combined Filters (useQueryStates)"
-            description="Manage sort, page, and search in one hook. Every setFilters() call — even if it updates multiple keys — produces exactly one pushState entry. No racing state."
-            demo={<MultiParamsDemo />}
-            code={multiParamsCode}
-            filename="product-filters.tsx"
-          />
-
+              <Play size={16} />
+              Open examples
+            </Link>
+          </div>
         </div>
       </section>
 
@@ -1203,12 +572,12 @@ export default function Page() {
           </div>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            <a
-              href="#examples"
+            <Link
+              href="/example"
               className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-linear-to-r from-violet-600 to-blue-600 text-white font-semibold text-sm hover:from-violet-500 hover:to-blue-500 transition shadow-lg shadow-violet-500/25"
             >
-              See Live Examples <ArrowRight size={14} />
-            </a>
+              <Play size={14} /> See Live Examples
+            </Link>
             <a
               href="https://github.com/mhfed/next-query-sync"
               target="_blank"
@@ -1232,7 +601,7 @@ export default function Page() {
             © {new Date().getFullYear()}
           </div>
           <div className="flex items-center gap-6">
-            <a href="#examples" className="hover:text-white transition-colors">Examples</a>
+            <Link href="/example" className="hover:text-white transition-colors">Examples</Link>
             <Link href="/example" className="hover:text-white transition-colors">Playground</Link>
             <a href="#api" className="hover:text-white transition-colors">API</a>
             <a

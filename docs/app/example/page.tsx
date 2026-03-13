@@ -1,6 +1,6 @@
 'use client'
 import Link from 'next/link'
-import React, { Suspense, useEffect, useState } from 'react'
+import { useState, useEffect, useRef, Suspense } from 'react'
 import { z } from 'zod'
 import {
   useQueryState,
@@ -12,8 +12,69 @@ import {
   parseAsArrayOf,
   withDefault,
 } from 'next-query-sync'
+import {
+  Play, Code2, Copy, Check, Link2, Search,
+  ChevronLeft, ChevronRight, ArrowLeft, Zap, Shield,
+  Menu, X,
+} from 'lucide-react'
 
-// ─── UrlBar ────────────────────────────────────────────────────────────────
+// ---------------------------------------------------------------------------
+// Shared UI primitives
+// ---------------------------------------------------------------------------
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false)
+  return (
+    <button
+      onClick={async () => {
+        await navigator.clipboard.writeText(text)
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+      }}
+      className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-white/5 border border-white/10 text-sm text-zinc-400 hover:bg-white/10 hover:text-white transition-all cursor-pointer"
+    >
+      {copied ? <Check size={11} className="text-green-400" /> : <Copy size={11} />}
+      {copied ? 'Copied' : 'Copy'}
+    </button>
+  )
+}
+
+function hl(line: string): string {
+  return line
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/('use client'|'next-query-sync'|'zod')/g, '<span style="color:#a78bfa">$1</span>')
+    .replace(/"([^"]+)"/g, '<span style="color:#fbbf24">"$1"</span>')
+    .replace(/\b(import|export|from|function|return|const|let|type|interface|null|true|false|if|else|async|await)\b/g, '<span style="color:#60a5fa">$1</span>')
+    .replace(/\b(useQueryState|useQueryStates|withDefault|parseAsString|parseAsInteger|parseAsFloat|parseAsBoolean|parseAsArrayOf|parseAsIsoDateTime|makeParser)\b/g, '<span style="color:#34d399">$1</span>')
+    .replace(/(\/\/.*$)/g, '<span style="color:#6b7280">$1</span>')
+    .replace(/\b(number|string|boolean|Date|T)\b/g, '<span style="color:#fb923c">$1</span>')
+}
+
+function CodeBlock({ code, filename }: { code: string; filename?: string }) {
+  const lines = code.trim().split('\n')
+  return (
+    <div className="rounded-xl border border-white/10 bg-[#0d0d14] overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/8 bg-white/3">
+        <div className="flex items-center gap-2">
+          <span className="w-3 h-3 rounded-full bg-red-500/80" />
+          <span className="w-3 h-3 rounded-full bg-yellow-500/80" />
+          <span className="w-3 h-3 rounded-full bg-green-500/80" />
+          {filename && <span className="ml-3 text-sm text-zinc-500 font-mono">{filename}</span>}
+        </div>
+        <CopyButton text={code.trim()} />
+      </div>
+      <pre className="p-4 text-sm font-mono leading-relaxed overflow-x-auto">
+        <code>
+          {lines.map((line, i) => (
+            <div key={i} className="flex">
+              <span className="select-none w-7 shrink-0 text-zinc-700 text-right mr-4 tabular-nums">{i + 1}</span>
+              <span dangerouslySetInnerHTML={{ __html: hl(line) }} />
+            </div>
+          ))}
+        </code>
+      </pre>
+    </div>
+  )
+}
 
 function UrlBar() {
   const [search, setSearch] = useState('')
@@ -28,372 +89,397 @@ function UrlBar() {
     }
   }, [])
   return (
-    <p className="text-xs text-gray-500 font-mono break-all">
-      <span className="font-semibold text-gray-700">URL: </span>
-      {`localhost:3000${search || '/'}`}
-    </p>
+    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/3 border border-white/8 text-sm font-mono overflow-hidden">
+      <Link2 size={11} className="text-zinc-600 shrink-0" />
+      <span className="text-zinc-600 shrink-0 truncate">localhost:3000/example</span>
+      <span className="text-violet-400 truncate min-w-0">{search || ''}</span>
+    </div>
   )
 }
 
-// ─── 0. useState-like API (auto-inference) ────────────────────────────────
+function ExampleCard({
+  id, badge, title, description, demo, code, filename,
+}: {
+  id: string; badge: string; title: string; description: string
+  demo: React.ReactNode; code: string; filename?: string
+}) {
+  const [tab, setTab] = useState<'demo' | 'code'>('demo')
+  return (
+    <div id={id} className="rounded-2xl border border-white/10 bg-white/2 overflow-hidden scroll-mt-6">
+      <div className="px-6 py-5 border-b border-white/8 flex flex-col gap-1">
+        <span className="inline-flex w-fit items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-violet-500/15 text-violet-300 border border-violet-500/20">
+          {badge}
+        </span>
+        <h3 className="text-2xl font-bold text-white">{title}</h3>
+        <p className="text-base text-zinc-400 leading-relaxed">{description}</p>
+      </div>
+      <div className="flex border-b border-white/8">
+        {(['demo', 'code'] as const).map((t) => (
+          <button key={t} onClick={() => setTab(t)}
+            className={`flex items-center gap-2 px-5 py-3 text-sm font-medium capitalize transition-colors ${
+              tab === t ? 'text-white border-b-2 border-violet-400' : 'text-zinc-500 hover:text-zinc-300'
+            }`}
+          >
+            {t === 'demo' ? <Play size={12} /> : <Code2 size={12} />}
+            {t === 'demo' ? 'Live Demo' : 'Code'}
+          </button>
+        ))}
+      </div>
+      <div className="p-6">
+        {tab === 'demo' ? (
+          <div className="space-y-4">
+            <Suspense fallback={<div className="text-zinc-500 text-sm animate-pulse">Loading…</div>}>
+              {demo}
+            </Suspense>
+            <UrlBar />
+          </div>
+        ) : (
+          <CodeBlock code={code} filename={filename} />
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Demo 1 — Auto-Inference
+// ---------------------------------------------------------------------------
 function AutoInferDemo() {
-  const [count, setCount] = useQueryState('ai_count', 0)
-  const [search, setSearch] = useQueryState('ai_q', '')
-  const [active, setActive] = useQueryState('ai_active', false)
+  const [count, setCount]   = useQueryState('count', 0)
+  const [search, setSearch] = useQueryState('search', '')
+  const [active, setActive] = useQueryState('active', false)
   return (
-    <div className="space-y-4">
-      <p className="text-sm text-gray-500">
-        Không cần import parser. Thư viện tự suy luận kiểu từ{' '}
-        <code>defaultValue</code>. Khi giá trị bằng default, param bị xóa khỏi URL.
-      </p>
-      <div className="grid gap-3 text-xs font-mono text-gray-500 bg-gray-50 rounded-lg p-3 leading-relaxed">
-        <p><span className="text-green-600">// Giống hệt useState!</span></p>
-        <p><span className="text-blue-600">useQueryState</span>(<span className="text-orange-600">&#39;ai_count&#39;</span>, <span className="text-purple-600">0</span>){'  '}→ number</p>
-        <p><span className="text-blue-600">useQueryState</span>(<span className="text-orange-600">&#39;ai_q&#39;</span>, <span className="text-purple-600">&#39;&#39;</span>){'     '}→ string</p>
-        <p><span className="text-blue-600">useQueryState</span>(<span className="text-orange-600">&#39;ai_active&#39;</span>, <span className="text-purple-600">false</span>){'  '}→ boolean</p>
-      </div>
-      {/* Number */}
+    <div className="space-y-5">
       <div className="flex items-center gap-3">
-        <span className="text-xs text-gray-500 w-20">number:</span>
-        <button
-          className="px-3 py-1.5 bg-red-500 text-white rounded-lg text-sm hover:bg-red-600 transition"
-          onClick={() => setCount(c => c - 1)}
-        >−</button>
-        <span className="text-2xl font-black tabular-nums w-12 text-center">{count}</span>
-        <button
-          className="px-3 py-1.5 bg-green-500 text-white rounded-lg text-sm hover:bg-green-600 transition"
-          onClick={() => setCount(c => c + 1)}
-        >+</button>
-        <button
-          className="px-3 py-1.5 bg-gray-200 text-gray-700 rounded-lg text-sm hover:bg-gray-300 transition"
-          onClick={() => setCount(0)}
-        >Reset</button>
+        <span className="text-sm text-zinc-500 w-16 shrink-0">number:</span>
+        <button onClick={() => setCount(c => c - 1)} className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-zinc-300 hover:bg-white/10 text-sm transition">−</button>
+        <span className="text-2xl font-black tabular-nums w-10 text-center text-white">{count}</span>
+        <button onClick={() => setCount(c => c + 1)} className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-zinc-300 hover:bg-white/10 text-sm transition">+</button>
+        <button onClick={() => setCount(0)} className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-zinc-500 hover:text-zinc-300 text-sm transition">Reset</button>
       </div>
-      {/* String */}
       <div className="flex items-center gap-3">
-        <span className="text-xs text-gray-500 w-20">string:</span>
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Tìm kiếm…"
-          className="flex-1 px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-        />
-        <button
-          className="px-3 py-1.5 bg-gray-200 text-gray-700 rounded-lg text-sm hover:bg-gray-300 transition"
-          onClick={() => setSearch('')}
-        >Clear</button>
+        <span className="text-sm text-zinc-500 w-16 shrink-0">string:</span>
+        <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Type something…"
+          className="flex-1 px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-violet-500/50 transition" />
+        <button onClick={() => setSearch('')} className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-zinc-500 hover:text-zinc-300 text-sm transition">Clear</button>
       </div>
-      {/* Boolean */}
       <div className="flex items-center gap-3">
-        <span className="text-xs text-gray-500 w-20">boolean:</span>
-        <button
-          onClick={() => setActive(v => !v)}
-          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-            active ? 'bg-blue-600' : 'bg-gray-300'
-          }`}
-        >
-          <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${
-            active ? 'translate-x-6' : 'translate-x-1'
-          }`} />
+        <span className="text-sm text-zinc-500 w-16 shrink-0">boolean:</span>
+        <button onClick={() => setActive(v => !v)}
+          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${active ? 'bg-violet-600' : 'bg-zinc-700'}`}>
+          <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${active ? 'translate-x-6' : 'translate-x-1'}`} />
         </button>
-        <span className="text-xs text-gray-500">{active ? 'true' : 'false'}</span>
+        <code className="text-sm text-orange-400">{String(active)}</code>
       </div>
+      <p className="text-sm text-zinc-600">Default <code className="text-violet-400">0</code> → number · <code className="text-violet-400">&#39;&#39;</code> → string · <code className="text-violet-400">false</code> → boolean. Default removes key from URL.</p>
     </div>
   )
 }
+const autoInferCode = `'use client'
+import { useQueryState } from 'next-query-sync'
 
+// No parsers needed — type is inferred from the default value
+function Demo() {
+  const [count,  setCount]  = useQueryState('count',  0)     // → number
+  const [search, setSearch] = useQueryState('search', '')    // → string
+  const [active, setActive] = useQueryState('active', false) // → boolean
 
-function CounterDemo() {
-  const [count, setCount] = useQueryState('count', withDefault(parseAsInteger, 0))
-  return (
-    <div>
-      <p className="text-sm text-gray-500 mb-3">
-        <code>useQueryState(&#39;count&#39;, withDefault(parseAsInteger, 0))</code>
-      </p>
-      <div className="flex items-center gap-4">
-        <button
-          className="px-5 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 active:scale-95 transition font-medium"
-          onClick={() => setCount(c => c - 1)}
-        >
-          − Giảm
-        </button>
-        <span className="text-4xl font-black tabular-nums w-16 text-center">{count}</span>
-        <button
-          className="px-5 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 active:scale-95 transition font-medium"
-          onClick={() => setCount(c => c + 1)}
-        >
-          + Tăng
-        </button>
-        <button
-          className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition text-sm"
-          onClick={() => setCount(0)}
-        >
-          Reset
-        </button>
-      </div>
-      <p className="mt-3 text-xs text-gray-500">
-        Thử nhấn F5 hoặc dùng Back/Forward của trình duyệt sau khi thay đổi giá trị.
-      </p>
-    </div>
-  )
-}
+  // setValue equals default → removes key from URL (clean URLs)
+  // setCount(0)   → removes ?count from URL
+  // setSearch('') → removes ?search from URL
+}`
 
-// ─── 2. Search ─────────────────────────────────────────────────────────────
+// ---------------------------------------------------------------------------
+// Demo 2 — String (nullable)
+// ---------------------------------------------------------------------------
 function SearchDemo() {
   const [q, setQ] = useQueryState('q', parseAsString)
   return (
-    <div>
-      <p className="text-sm text-gray-500 mb-3">
-        <code>useQueryState(&#39;q&#39;, parseAsString)</code>
-        {' '}— khi xóa hết, key sẽ bị xóa khỏi URL.
-      </p>
-      <input
-        type="text"
-        placeholder="Nhập từ khóa tìm kiếm…"
-        value={q ?? ''}
-        onChange={(e) => setQ(e.target.value || null)}
-        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
-      />
-      <p className="mt-2 text-xs text-gray-500">
-        Giá trị JS: <code className="text-blue-600">{q === null ? 'null' : `"${q}"`}</code>
+    <div className="space-y-4">
+      <div className="relative">
+        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none" />
+        <input type="text" placeholder="Type to search…" value={q ?? ''}
+          onChange={(e) => setQ(e.target.value || null)}
+          className="w-full pl-9 pr-4 py-2.5 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-violet-500/50 transition" />
+      </div>
+      <p className="text-sm text-zinc-500">
+        Value: <code className="text-violet-400">{q === null ? 'null' : `"${q}"`}</code>
+        {' '} — {q ? `searching for "${q}"` : 'key removed from URL when empty'}
       </p>
     </div>
   )
 }
+const searchCode = `'use client'
+import { useQueryState, parseAsString } from 'next-query-sync'
 
-// ─── 3. Pagination với history: 'push' ────────────────────────────────────
+function SearchBox() {
+  const [q, setQ] = useQueryState('q', parseAsString)
+  // q: string | null
+  // null  → key absent from URL
+  // "hi"  → ?q=hi
+
+  return (
+    <input
+      value={q ?? ''}
+      onChange={(e) => setQ(e.target.value || null)}
+      placeholder="Type to search…"
+    />
+  )
+}`
+
+// ---------------------------------------------------------------------------
+// Demo 3 — Pagination
+// ---------------------------------------------------------------------------
 function PaginationDemo() {
+  const [page, setPage] = useQueryState('page', withDefault(parseAsInteger, 1), { history: 'push' })
+  const TOTAL = 8
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center justify-center gap-2 flex-wrap">
+        <button disabled={page <= 1} onClick={() => setPage(p => Math.max(1, p - 1))}
+          className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-zinc-300 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition">
+          <ChevronLeft size={16} /> Prev
+        </button>
+        <div className="flex gap-1">
+          {Array.from({ length: TOTAL }, (_, i) => i + 1).map(n => (
+            <button key={n} onClick={() => setPage(n)}
+              className={`w-9 h-9 rounded-lg text-sm font-semibold transition ${n === page ? 'bg-violet-600 text-white shadow-lg shadow-violet-500/30' : 'bg-white/5 border border-white/10 text-zinc-400 hover:bg-white/10'}`}>
+              {n}
+            </button>
+          ))}
+        </div>
+        <button disabled={page >= TOTAL} onClick={() => setPage(p => Math.min(TOTAL, p + 1))}
+          className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-zinc-300 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition">
+          Next <ChevronRight size={16} />
+        </button>
+      </div>
+      <p className="text-sm text-zinc-500 text-center"><code className="text-violet-400">history: &#39;push&#39;</code> — Back/Forward button navigates between pages.</p>
+    </div>
+  )
+}
+const paginationCode = `'use client'
+import { useQueryState, parseAsInteger, withDefault } from 'next-query-sync'
+
+function Pagination() {
   const [page, setPage] = useQueryState(
     'page',
-    withDefault(parseAsInteger, 1),
-    { history: 'push' }
+    withDefault(parseAsInteger, 1), // default → 1 (never null)
+    { history: 'push' }             // Back button works!
   )
-  return (
-    <div>
-      <p className="text-sm text-gray-500 mb-3">
-        <code>useQueryState(&#39;page&#39;, withDefault(parseAsInteger, 1), &#123; history: &#39;push&#39; &#125;)</code>
-        {' '}— nút Back hoạt động!
-      </p>
-      <div className="flex items-center gap-3">
-        <button
-          disabled={page <= 1}
-          onClick={() => setPage(p => Math.max(1, p - 1))}
-          className="px-4 py-2 border border-gray-300 rounded-lg text-sm disabled:opacity-40 hover:bg-gray-50 transition"
-        >
-          ← Prev
-        </button>
-        {Array.from({ length: 6 }, (_, i) => i + 1).map(n => (
-          <button
-            key={n}
-            onClick={() => setPage(n)}
-            className={`w-10 h-10 rounded-lg text-sm font-semibold transition ${
-              n === page
-                ? 'bg-blue-600 text-white shadow'
-                : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
-            }`}
-          >
-            {n}
-          </button>
-        ))}
-        <button
-          disabled={page >= 6}
-          onClick={() => setPage(p => Math.min(6, p + 1))}
-          className="px-4 py-2 border border-gray-300 rounded-lg text-sm disabled:opacity-40 hover:bg-gray-50 transition"
-        >
-          Next →
-        </button>
-      </div>
-    </div>
-  )
-}
+  // page: number  ← withDefault removes null from type
 
-// ─── 4. Boolean toggles ────────────────────────────────────────────────────
+  return (
+    <>
+      <button onClick={() => setPage(p => p - 1)}>← Prev</button>
+      <span>Page {page}</span>
+      <button onClick={() => setPage(p => p + 1)}>Next →</button>
+    </>
+  )
+}`
+
+// ---------------------------------------------------------------------------
+// Demo 4 — Boolean
+// ---------------------------------------------------------------------------
 function BooleanDemo() {
-  const [dark, setDark] = useQueryState('dark', withDefault(parseAsBoolean, false))
+  const [dark, setDark]       = useQueryState('dark',    withDefault(parseAsBoolean, false))
   const [compact, setCompact] = useQueryState('compact', withDefault(parseAsBoolean, false))
   return (
-    <div>
-      <p className="text-sm text-gray-500 mb-3">
-        <code>withDefault(parseAsBoolean, false)</code> — giá trị luôn là{' '}
-        <code>boolean</code>, không bao giờ null.
-      </p>
-      <div className="space-y-3">
-        {[
-          { label: 'Dark mode', key: 'dark', value: dark, setter: setDark },
-          { label: 'Compact view', key: 'compact', value: compact, setter: setCompact },
-        ].map(({ label, key, value, setter }) => (
-          <div key={key} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
-            <div>
-              <p className="text-sm font-medium text-gray-800">{label}</p>
-              <p className="text-xs text-gray-400">
-                ?{key}=<code>{value.toString()}</code>
-              </p>
-            </div>
-            <button
-              onClick={() => setter(v => !v)}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                value ? 'bg-blue-600' : 'bg-gray-300'
-              }`}
-            >
-              <span
-                className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${
-                  value ? 'translate-x-6' : 'translate-x-1'
-                }`}
-              />
-            </button>
+    <div className="space-y-3">
+      {[
+        { label: 'Dark mode',    key: 'dark',    value: dark,    setter: setDark },
+        { label: 'Compact view', key: 'compact', value: compact, setter: setCompact },
+      ].map(({ label, key, value, setter }) => (
+        <div key={key} className="flex items-center justify-between p-4 rounded-xl border border-white/8 bg-white/3">
+          <div>
+            <p className="text-sm font-medium text-white">{label}</p>
+            <p className="text-sm text-zinc-500 mt-0.5">
+              <code className="text-violet-400">?{key}=</code><code className="text-orange-400">{value.toString()}</code>
+            </p>
           </div>
-        ))}
-      </div>
+          <button onClick={() => setter(v => !v)}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${value ? 'bg-violet-600' : 'bg-zinc-700'}`}>
+            <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${value ? 'translate-x-6' : 'translate-x-1'}`} />
+          </button>
+        </div>
+      ))}
     </div>
   )
 }
+const booleanCode = `'use client'
+import { useQueryState, parseAsBoolean, withDefault } from 'next-query-sync'
 
-// ─── 5. Array / multi-select ───────────────────────────────────────────────
-const TAGS = ['react', 'typescript', 'nextjs', 'tailwind', 'nodejs']
+function Settings() {
+  const [dark, setDark] = useQueryState(
+    'dark',
+    withDefault(parseAsBoolean, false)
+  )
+  // dark: boolean  ← never null
+
+  return (
+    <button onClick={() => setDark(v => !v)}>
+      {dark ? 'Light mode' : 'Dark mode'}
+    </button>
+  )
+}`
+
+// ---------------------------------------------------------------------------
+// Demo 5 — Array
+// ---------------------------------------------------------------------------
+const ALL_TAGS = ['react', 'typescript', 'nextjs', 'tailwind', 'nodejs']
 
 function ArrayDemo() {
   const [tags, setTags] = useQueryState('tags', parseAsArrayOf(parseAsString))
   const selected = tags ?? []
-
   const toggle = (tag: string) => {
-    const next = selected.includes(tag)
-      ? selected.filter(t => t !== tag)
-      : [...selected, tag]
+    const next = selected.includes(tag) ? selected.filter(t => t !== tag) : [...selected, tag]
     setTags(next.length > 0 ? next : null)
   }
-
   return (
-    <div>
-      <p className="text-sm text-gray-500 mb-3">
-        <code>parseAsArrayOf(parseAsString)</code> — lưu dạng{' '}
-        <code>?tags=react,typescript,nextjs</code>
-      </p>
-      <div className="flex flex-wrap gap-2 mb-3">
-        {TAGS.map(tag => (
-          <button
-            key={tag}
-            onClick={() => toggle(tag)}
-            className={`px-3 py-1.5 rounded-full text-sm border transition ${
-              selected.includes(tag)
-                ? 'border-blue-500 bg-blue-50 text-blue-700 font-medium'
-                : 'border-gray-300 text-gray-600 hover:border-gray-400'
-            }`}
-          >
+    <div className="space-y-4">
+      <p className="text-sm text-zinc-500">Select topics (comma-separated in URL):</p>
+      <div className="flex flex-wrap gap-2">
+        {ALL_TAGS.map(tag => (
+          <button key={tag} onClick={() => toggle(tag)}
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition ${selected.includes(tag) ? 'border-violet-500 bg-violet-500/20 text-violet-300' : 'border-white/10 bg-white/3 text-zinc-400 hover:border-white/20 hover:text-white'}`}>
             {tag}
           </button>
         ))}
       </div>
-      <p className="text-xs text-gray-500">
-        JS value:{' '}
-        <code className="text-blue-600 break-all">
-          {selected.length > 0 ? JSON.stringify(selected) : 'null'}
-        </code>
-      </p>
-    </div>
-  )
-}
-
-// ─── 6. useQueryStates — nhiều params cùng lúc ────────────────────────────
-function MultiStateDemo() {
-  const [filters, setFilters] = useQueryStates({
-    sort: withDefault(parseAsString, 'latest'),
-    pg: withDefault(parseAsInteger, 1),
-    s: parseAsString,
-  })
-  const pg = filters.pg ?? 1
-  const sort = filters.sort ?? 'latest'
-
-  return (
-    <div>
-      <p className="text-sm text-gray-500 mb-3">
-        <code>useQueryStates(&#123; sort, pg, s &#125;)</code> — tất cả thay đổi trong
-        một <code>setFilters()</code> tạo ra đúng <strong>một</strong> history entry.
-      </p>
-      <div className="space-y-3">
-        <div className="flex gap-2">
-          {['latest', 'popular', 'oldest'].map(opt => (
-            <button
-              key={opt}
-              onClick={() => setFilters({ sort: opt, pg: 1 })}
-              className={`px-3 py-1.5 rounded-lg text-sm border transition ${
-                sort === opt
-                  ? 'border-blue-500 bg-blue-50 text-blue-700'
-                  : 'border-gray-300 text-gray-600 hover:bg-gray-50'
-              }`}
-            >
-              {opt}
-            </button>
-          ))}
-        </div>
-        <input
-          type="text"
-          placeholder="Tìm kiếm…"
-          value={filters.s ?? ''}
-          onChange={(e) => setFilters({ s: e.target.value || null, pg: 1 })}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-        />
-        <div className="flex items-center gap-3">
-          <button
-            disabled={pg <= 1}
-            onClick={() => setFilters({ pg: pg - 1 })}
-            className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm disabled:opacity-40 hover:bg-gray-50 transition"
-          >←</button>
-          <span className="text-sm font-bold w-8 text-center">{pg}</span>
-          <button
-            onClick={() => setFilters({ pg: pg + 1 })}
-            className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition"
-          >→</button>
-        </div>
-        <div className="mt-2 p-3 bg-gray-50 rounded-lg text-xs font-mono text-gray-600 space-y-0.5">
-          <p>sort: <span className="text-blue-600">{JSON.stringify(sort)}</span></p>
-          <p>pg: <span className="text-orange-600">{pg}</span></p>
-          <p>s: <span className="text-purple-600">{filters.s === null ? 'null' : JSON.stringify(filters.s)}</span></p>
-        </div>
+      <div className="p-4 rounded-xl border border-white/8 bg-white/3">
+        <p className="text-sm text-zinc-500 mb-1">JS value:</p>
+        <code className="text-sm text-violet-400">{selected.length > 0 ? JSON.stringify(selected) : 'null'}</code>
       </div>
     </div>
   )
 }
+const arrayCode = `'use client'
+import { useQueryState, parseAsArrayOf, parseAsString } from 'next-query-sync'
 
-// ─── 7. Parser method chaining ────────────────────────────────────────────
-function ChainingDemo() {
-  const [page, setPage] = useQueryState('cp_page', parseAsInteger.withDefault(1))
-  const [date, setDate] = useQueryState('cp_date', parseAsIsoDateTime.withDefault(new Date('2026-01-01T00:00:00.000Z')))
+function TagFilter() {
+  const [tags, setTags] = useQueryState(
+    'tags',
+    parseAsArrayOf(parseAsString)
+  )
+  // tags: string[] | null
+  // ?tags=react,nextjs → ['react', 'nextjs']
+
+  const toggle = (tag: string) => {
+    const current = tags ?? []
+    const next = current.includes(tag)
+      ? current.filter(t => t !== tag)
+      : [...current, tag]
+    setTags(next.length > 0 ? next : null)
+  }
+}`
+
+// ---------------------------------------------------------------------------
+// Demo 6 — useQueryStates
+// ---------------------------------------------------------------------------
+const SORT_OPTIONS = ['latest', 'popular', 'oldest']
+
+function MultiParamsDemo() {
+  const [filters, setFilters] = useQueryStates(
+    { sort: withDefault(parseAsString, 'latest'), pg: withDefault(parseAsInteger, 1), s: parseAsString },
+    { history: 'push' }
+  )
+  const pg   = filters.pg   ?? 1
+  const sort = filters.sort ?? 'latest'
   return (
     <div className="space-y-4">
-      <p className="text-sm text-gray-500">
-        Dùng <code>.withDefault()</code> trực tiếp trên parser — giống nuqs nhưng ngắn hơn.
-      </p>
-      <div className="grid gap-2 text-xs font-mono bg-gray-50 rounded-lg p-3">
-        <p><span className="text-blue-600">parseAsInteger</span>.withDefault(<span className="text-purple-600">1</span>)</p>
-        <p><span className="text-blue-600">parseAsIsoDateTime</span>.withDefault(<span className="text-purple-600">new Date(…)</span>)</p>
+      <div className="flex gap-2">
+        {SORT_OPTIONS.map(opt => (
+          <button key={opt} onClick={() => setFilters({ sort: opt, pg: 1 })}
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition ${sort === opt ? 'border-violet-500 bg-violet-500/20 text-violet-300' : 'border-white/10 bg-white/3 text-zinc-400 hover:border-white/20 hover:text-white'}`}>
+            {opt}
+          </button>
+        ))}
       </div>
-      {/* Page */}
-      <div className="flex items-center gap-3">
-        <span className="text-xs text-gray-500 w-16">page:</span>
-        <button onClick={() => setPage(p => Math.max(1, p - 1))}
-          className="px-3 py-1.5 border border-gray-300 rounded text-sm hover:bg-gray-50">←</button>
-        <span className="text-lg font-bold w-8 text-center">{page}</span>
-        <button onClick={() => setPage(p => p + 1)}
-          className="px-3 py-1.5 border border-gray-300 rounded text-sm hover:bg-gray-50">→</button>
-        <button onClick={() => setPage(1)}
-          className="px-3 py-1.5 bg-gray-100 text-gray-600 rounded text-sm hover:bg-gray-200">Reset</button>
+      <div className="relative">
+        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none" />
+        <input type="text" placeholder="Search…" value={filters.s ?? ''}
+          onChange={(e) => setFilters({ s: e.target.value || null, pg: 1 })}
+          className="w-full pl-8 pr-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-zinc-600 focus:outline-none focus:border-violet-500/50 text-sm transition" />
       </div>
-      {/* Date */}
       <div className="flex items-center gap-3">
-        <span className="text-xs text-gray-500 w-16">date:</span>
-        <input type="date" value={date.toISOString().slice(0, 10)}
-          onChange={e => setDate(new Date(e.target.value + 'T00:00:00.000Z'))}
-          className="px-3 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
-        <span className="text-xs text-gray-400">{date.toISOString()}</span>
+        <p className="text-sm text-zinc-500">Page:</p>
+        <button disabled={pg <= 1} onClick={() => setFilters({ pg: pg - 1 })}
+          className="px-3 py-1 rounded bg-white/5 border border-white/10 text-sm text-zinc-300 hover:bg-white/10 disabled:opacity-30 transition">←</button>
+        <span className="text-sm font-bold text-white tabular-nums w-6 text-center">{pg}</span>
+        <button onClick={() => setFilters({ pg: pg + 1 })}
+          className="px-3 py-1 rounded bg-white/5 border border-white/10 text-sm text-zinc-300 hover:bg-white/10 transition">→</button>
+      </div>
+      <div className="p-4 rounded-xl border border-white/8 bg-white/3 text-sm font-mono space-y-1">
+        <p><span className="text-pink-400">sort</span>: <span className="text-yellow-400">{JSON.stringify(sort)}</span></p>
+        <p><span className="text-pink-400">pg</span>:   <span className="text-orange-400">{pg}</span></p>
+        <p><span className="text-pink-400">s</span>:    <span className="text-violet-400">{filters.s === null ? 'null' : JSON.stringify(filters.s)}</span></p>
       </div>
     </div>
   )
 }
+const multiParamsCode = `'use client'
+import { useQueryStates, parseAsString, parseAsInteger, withDefault } from 'next-query-sync'
 
-// ─── 8. Zod schema integration ────────────────────────────────────────────
+function ProductFilters() {
+  const [filters, setFilters] = useQueryStates(
+    {
+      sort:   withDefault(parseAsString,  'latest'),
+      page:   withDefault(parseAsInteger, 1),
+      search: parseAsString,
+    },
+    { history: 'push' }
+  )
+  // One setFilters() call → one history entry (no racing state)
+  const handleSort = (sort: string) =>
+    setFilters({ sort, page: 1 })
+}`
+
+// ---------------------------------------------------------------------------
+// Demo 7 — Parser chaining
+// ---------------------------------------------------------------------------
+function ChainingDemo() {
+  const [page, setPage] = useQueryState('cp', parseAsInteger.withDefault(1))
+  const [date, setDate] = useQueryState('dt', parseAsIsoDateTime.withDefault(new Date('2026-01-01T00:00:00.000Z')))
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center gap-3">
+        <span className="text-sm text-zinc-500 w-12 shrink-0">integer:</span>
+        <button onClick={() => setPage(p => Math.max(1, p - 1))} className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-zinc-300 hover:bg-white/10 text-sm transition">←</button>
+        <span className="text-lg font-black tabular-nums w-8 text-center text-white">{page}</span>
+        <button onClick={() => setPage(p => p + 1)} className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-zinc-300 hover:bg-white/10 text-sm transition">→</button>
+        <button onClick={() => setPage(1)} className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-zinc-500 hover:text-zinc-300 text-sm transition">Reset</button>
+      </div>
+      <div className="flex items-center gap-3 flex-wrap">
+        <span className="text-sm text-zinc-500 w-12 shrink-0">Date:</span>
+        <input type="date" value={date.toISOString().slice(0, 10)}
+          onChange={e => setDate(new Date(e.target.value + 'T00:00:00.000Z'))}
+          className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-violet-500/50 transition" />
+        <code className="text-sm text-zinc-500">{date.toISOString()}</code>
+      </div>
+    </div>
+  )
+}
+const chainingCode = `'use client'
+import { useQueryState, parseAsInteger, parseAsIsoDateTime } from 'next-query-sync'
+
+// nuqs-style chained API — no withDefault() wrapper needed
+const [page, setPage] = useQueryState('page', parseAsInteger.withDefault(1))
+const [date, setDate] = useQueryState('date', parseAsIsoDateTime.withDefault(new Date()))
+
+// All built-in parsers support .withDefault():
+// parseAsString.withDefault('')
+// parseAsFloat.withDefault(0.0)
+// parseAsBoolean.withDefault(false)
+// parseAsArrayOf(parseAsString).withDefault([])
+// parseAsIsoDateTime.withDefault(new Date())
+
+// Re-chain to change the default:
+// parseAsInteger.withDefault(1).withDefault(99) → default is 99`
+
+// ---------------------------------------------------------------------------
+// Demo 8 — Zod
+// ---------------------------------------------------------------------------
 const RoleFilterSchema = z.object({
-  role: z.enum(['admin', 'user', 'guest']),
+  role:   z.enum(['admin', 'user', 'guest']),
   status: z.enum(['active', 'banned']),
 }).default({ role: 'user', status: 'active' })
 
@@ -401,167 +487,275 @@ function ZodDemo() {
   const [filter, setFilter] = useQueryState('zf', RoleFilterSchema)
   return (
     <div className="space-y-4">
-      <p className="text-sm text-gray-500">
-        Truyền thẳng <strong>Zod schema</strong> — thư viện tự JSON.parse, validate và fallback về default khi URL bị lỗi.
-      </p>
-      <div className="text-xs font-mono bg-gray-50 rounded-lg p-3 space-y-1">
-        <p><span className="text-green-600">// Chỉ cần một dòng, zero boilerplate!</span></p>
-        <p><span className="text-blue-600">useQueryState</span>(<span className="text-orange-600">&#39;zf&#39;</span>, RoleFilterSchema)</p>
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        {/* role */}
+      <div className="grid grid-cols-2 gap-4">
         <div>
-          <p className="text-xs font-medium text-gray-600 mb-1.5">role</p>
+          <p className="text-sm text-zinc-500 mb-2">role</p>
           <div className="flex gap-1.5 flex-wrap">
             {(['admin', 'user', 'guest'] as const).map(r => (
               <button key={r} onClick={() => setFilter(f => ({ ...f, role: r }))}
-                className={`px-3 py-1.5 rounded-full text-xs border transition ${filter.role === r ? 'bg-blue-100 border-blue-400 text-blue-700 font-semibold' : 'border-gray-300 text-gray-600 hover:border-gray-400'}`}>
+                className={`px-2.5 py-1 rounded-full text-sm border transition ${filter.role === r ? 'bg-violet-500/20 border-violet-500 text-violet-300 font-semibold' : 'border-white/10 text-zinc-400 hover:border-white/20 hover:text-white'}`}>
                 {r}
               </button>
             ))}
           </div>
         </div>
-        {/* status */}
         <div>
-          <p className="text-xs font-medium text-gray-600 mb-1.5">status</p>
+          <p className="text-sm text-zinc-500 mb-2">status</p>
           <div className="flex gap-1.5">
             {(['active', 'banned'] as const).map(s => (
               <button key={s} onClick={() => setFilter(f => ({ ...f, status: s }))}
-                className={`px-3 py-1.5 rounded-full text-xs border transition ${filter.status === s ? 'bg-green-100 border-green-400 text-green-700 font-semibold' : 'border-gray-300 text-gray-600 hover:border-gray-400'}`}>
+                className={`px-2.5 py-1 rounded-full text-sm border transition ${filter.status === s ? 'bg-green-500/20 border-green-500 text-green-300 font-semibold' : 'border-white/10 text-zinc-400 hover:border-white/20 hover:text-white'}`}>
                 {s}
               </button>
             ))}
           </div>
         </div>
       </div>
-      <div className="p-3 bg-gray-50 rounded-lg text-xs font-mono text-gray-600 space-y-0.5">
-        <p>JS value: <span className="text-blue-600">{JSON.stringify(filter)}</span></p>
-        <p className="text-gray-400 text-[10px]">URL: ?zf={encodeURIComponent(JSON.stringify(filter))}</p>
+      <div className="p-4 rounded-xl border border-white/8 bg-white/3 text-sm font-mono space-y-1">
+        <p className="text-zinc-600">{'// JS value (type-safe, never null):'}</p>
+        <p className="text-violet-400">{JSON.stringify(filter)}</p>
+      </div>
+      <div className="flex items-start gap-2 p-3 rounded-lg bg-emerald-500/8 border border-emerald-500/20">
+        <Shield size={13} className="text-emerald-400 mt-0.5 shrink-0" />
+        <p className="text-sm text-emerald-300">Invalid URL → safely falls back to Zod default. No crashes.</p>
       </div>
     </div>
   )
 }
+const zodCode = `'use client'
+import { z } from 'zod'
+import { useQueryState } from 'next-query-sync'
 
-// ─── 9. Debounce + startTransition ────────────────────────────────────────
+const FilterSchema = z.object({
+  role:   z.enum(['admin', 'user', 'guest']),
+  status: z.enum(['active', 'banned']),
+}).default({ role: 'user', status: 'active' })
+
+function Filters() {
+  // Pass schema directly — no wrapper needed!
+  const [filter, setFilter] = useQueryState('filter', FilterSchema)
+  // filter: { role: 'admin' | 'user' | 'guest'; status: 'active' | 'banned' }
+  //         → never null, always validated
+
+  // URL: ?filter=%7B%22role%22%3A%22admin%22%2C%22status%22%3A%22active%22%7D
+  // If URL is tampered with → silently falls back to .default({...})
+
+  setFilter(f => ({ ...f, role: 'admin' }))
+}`
+
+// ---------------------------------------------------------------------------
+// Demo 9 — Debounce
+// ---------------------------------------------------------------------------
 function DebounceDemo() {
   const [q, setQ] = useQueryState('dq', '', { debounce: 400, startTransition: true })
   return (
     <div className="space-y-4">
-      <p className="text-sm text-gray-500">
-        <code>&#123; debounce: 400, startTransition: true &#125;</code> — UI cập nhật ngay lập tức,
-        URL chỉ ghi sau 400ms ngừng gõ. Không cần hook useDebounce riêng!
-      </p>
-      <input
-        type="text"
-        value={q}
-        onChange={e => setQ(e.target.value)}
-        placeholder="Gõ liên tục, xem URL chỉ cập nhật khi ngừng…"
-        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
-      />
-      <div className="flex items-center gap-2 text-xs text-gray-500">
-        <span>Giá trị hiện tại:</span>
-        <code className="text-blue-600">{q === '' ? '(trống)' : `"${q}"`}</code>
-        <span className="ml-auto text-gray-400">debounce: 400ms</span>
+      <div className="relative">
+        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none" />
+        <input type="text" value={q} onChange={e => setQ(e.target.value)}
+          placeholder="Type quickly — URL updates 400ms after you stop…"
+          className="w-full pl-9 pr-4 py-2.5 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-violet-500/50 transition" />
+      </div>
+      <div className="flex items-center justify-between text-xs text-zinc-500">
+        <span>Value: <code className="text-violet-400">{q === '' ? '(empty)' : `"${q}"`}</code></span>
+        <span className="text-zinc-600">debounce: 400ms · startTransition: true</span>
+      </div>
+      <div className="flex items-start gap-2 p-3 rounded-lg bg-yellow-500/8 border border-yellow-500/20">
+        <Zap size={13} className="text-yellow-400 mt-0.5 shrink-0" />
+        <p className="text-sm text-yellow-300">UI updates instantly (optimistic). URL writes only after user stops typing — prevents redundant Next.js server fetches.</p>
       </div>
     </div>
   )
 }
+const debounceCode = `'use client'
+import { useQueryState } from 'next-query-sync'
 
-
-const demos: { id: number; title: string; component: React.ReactNode }[] = [
-  { id: 0, title: '✨ Auto-Inference — useState-like API', component: <AutoInferDemo /> },
-  { id: 1, title: 'Counter (Integer + default)', component: <CounterDemo /> },
-  { id: 2, title: 'Search (String, nullable)', component: <SearchDemo /> },
-  { id: 3, title: 'Pagination (history: push)', component: <PaginationDemo /> },
-  { id: 4, title: 'Boolean Toggles', component: <BooleanDemo /> },
-  { id: 5, title: 'Multi-Select Array', component: <ArrayDemo /> },
-  { id: 6, title: 'useQueryStates (multiple params)', component: <MultiStateDemo /> },
-  { id: 7, title: '🔗 Parser Method Chaining (.withDefault())', component: <ChainingDemo /> },
-  { id: 8, title: '🛡️ Zod Schema Integration', component: <ZodDemo /> },
-  { id: 9, title: '⚡ Debounce + startTransition', component: <DebounceDemo /> },
-]
-
-function PageContent() {
-  const [activeId, setActiveId] = useQueryState('tab', withDefault(parseAsInteger, 0))
-  const active = demos.find(d => d.id === activeId) ?? demos[0]
+function SearchInput() {
+  const [q, setQ] = useQueryState('q', '', {
+    debounce: 300,         // wait 300ms after last keystroke
+    startTransition: true, // non-urgent React update (no UI freeze)
+  })
+  // Optimistic: UI shows pending value immediately
+  // URL only updates after debounce fires → fewer server re-fetches
 
   return (
-    <div className="min-h-screen bg-gray-50 font-sans flex flex-col">
-      {/* Header */}
-      <header className="border-b bg-white px-6 py-4 shrink-0">
-        <Link
-          href="/"
-          className="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
-        >
-          ← Back to docs
-        </Link>
-        <h1 className="text-2xl font-black text-gray-900">
-          next-query-sync{' '}
-          <span className="ml-2 text-sm font-medium text-gray-400">example</span>
-        </h1>
-        <p className="mt-1 text-sm text-gray-500">
-          Tất cả các demo đều đồng bộ state với URL. Thử thao tác, F5, và dùng Back/Forward.
-        </p>
-      </header>
+    <input
+      value={q}
+      onChange={e => setQ(e.target.value)} // call freely, lib handles throttling
+      placeholder="Search…"
+    />
+  )
+}`
 
-      {/* Live URL bar */}
-      <div className="border-b bg-white px-6 py-3 shrink-0">
-        <UrlBar />
-      </div>
+// ---------------------------------------------------------------------------
+// Data
+// ---------------------------------------------------------------------------
+const EXAMPLES = [
+  { id: 'ex-auto',     badge: 'useQueryState · auto-inference',                      icon: '✨', title: 'useState-like API',        description: 'Pass a primitive default — the library infers the parser automatically. No imports needed.',                                        demo: <AutoInferDemo />,    code: autoInferCode,    filename: 'auto-infer.tsx' },
+  { id: 'ex-search',   badge: 'useQueryState · parseAsString',                       icon: '🔤', title: 'String (nullable)',         description: 'Sync a text input with a URL param. Clearing the input removes the key from the URL entirely.',                                    demo: <SearchDemo />,       code: searchCode,       filename: 'search.tsx' },
+  { id: 'ex-page',     badge: 'parseAsInteger · withDefault · history:push',         icon: '📄', title: 'Pagination',                description: 'Integer with default 1 — never null. history:\'push\' creates real history entries so Back/Forward navigates pages.',            demo: <PaginationDemo />,   code: paginationCode,   filename: 'pagination.tsx' },
+  { id: 'ex-bool',     badge: 'parseAsBoolean · withDefault',                        icon: '☑️', title: 'Boolean Toggles',           description: 'Two independent boolean params. withDefault ensures the value is always a boolean.',                                             demo: <BooleanDemo />,      code: booleanCode,      filename: 'booleans.tsx' },
+  { id: 'ex-array',    badge: 'parseAsArrayOf',                                      icon: '📋', title: 'Multi-Select Array',        description: 'Array values serialized as comma-separated strings. Deselecting all removes the key.',                                           demo: <ArrayDemo />,        code: arrayCode,        filename: 'array.tsx' },
+  { id: 'ex-multi',    badge: 'useQueryStates · multiple parsers',                   icon: '⊞',  title: 'Combined Filters',          description: 'Manage sort, page and search in one hook. One setFilters() call → one history entry.',                                           demo: <MultiParamsDemo />,  code: multiParamsCode,  filename: 'multi-params.tsx' },
+  { id: 'ex-chain',    badge: 'parseAsInteger.withDefault() · parseAsIsoDateTime',   icon: '⛓️', title: 'Parser Chaining',           description: 'nuqs-style .withDefault() API on every built-in parser. Includes parseAsIsoDateTime.',                                          demo: <ChainingDemo />,     code: chainingCode,     filename: 'chaining.tsx' },
+  { id: 'ex-zod',      badge: 'Zod schema · JSON · safe fallback',                   icon: '🛡️', title: 'Zod Integration',           description: 'Pass a Zod schema directly. Auto-parses JSON, validates, and falls back to .default() on error.',                               demo: <ZodDemo />,          code: zodCode,          filename: 'zod.tsx' },
+  { id: 'ex-debounce', badge: 'debounce · startTransition · optimistic UI',          icon: '⚡', title: 'Debounce + Transition',     description: 'Built-in debounce with optimistic pending value — UI is instant, URL writes are throttled.',                                     demo: <DebounceDemo />,     code: debounceCode,     filename: 'debounce.tsx' },
+]
 
-      {/* Body */}
-      <div className="flex flex-1 overflow-hidden" style={{ minHeight: 0 }}>
-        {/* Sidebar */}
-        <aside className="w-64 border-r bg-white shrink-0 overflow-y-auto">
-          <nav className="p-2 space-y-0.5">
-            {demos.map(({ id, title }) => (
-              <button
-                key={id}
-                onClick={() => setActiveId(id)}
-                className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-left transition-colors text-sm ${
-                  id === activeId
-                    ? 'bg-blue-50 text-blue-700 font-semibold'
-                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-800'
+// ---------------------------------------------------------------------------
+// Sidebar
+// ---------------------------------------------------------------------------
+function Sidebar({ activeId }: { activeId: string }) {
+  return (
+    <aside className="w-60 shrink-0 sticky top-[57px] h-[calc(100vh-57px)] overflow-y-auto border-r border-white/8 bg-[#0a0a0f]/60 backdrop-blur-sm">
+      <div className="px-4 pt-5 pb-3">
+        <p className="text-xs font-semibold uppercase tracking-widest text-zinc-600 mb-4">Examples</p>
+        <nav className="space-y-0.5">
+          {EXAMPLES.map((ex, i) => {
+            const isActive = activeId === ex.id
+            return (
+              <a
+                key={ex.id}
+                href={`#${ex.id}`}
+                className={`group flex items-start gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150 ${
+                  isActive
+                    ? 'bg-violet-500/12 text-white'
+                    : 'text-zinc-500 hover:text-zinc-200 hover:bg-white/4'
                 }`}
               >
-                <span className={`shrink-0 flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold ${
-                  id === activeId ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-500'
+                {/* Number badge */}
+                <span className={`shrink-0 mt-0.5 w-5 h-5 rounded flex items-center justify-center text-[10px] font-bold tabular-nums transition-colors ${
+                  isActive ? 'bg-violet-500/30 text-violet-300' : 'bg-white/5 text-zinc-600 group-hover:text-zinc-400'
                 }`}>
-                  {id}
+                  {i + 1}
                 </span>
-                <span className="leading-snug">{title}</span>
-              </button>
-            ))}
-          </nav>
-        </aside>
+                <span className="leading-snug min-w-0">
+                  <span className={`block font-medium transition-colors ${isActive ? 'text-white' : ''}`}>
+                    {ex.icon} {ex.title}
+                  </span>
+                </span>
+                {/* Active bar */}
+                {isActive && (
+                  <span className="ml-auto mt-1 shrink-0 w-1.5 h-1.5 rounded-full bg-violet-400" />
+                )}
+              </a>
+            )
+          })}
+        </nav>
+      </div>
+
+      {/* Live URL at bottom of sidebar */}
+      <div className="px-4 pb-5 mt-4 border-t border-white/6 pt-4">
+        <p className="text-sm text-zinc-600 mb-2 font-medium uppercase tracking-widest">Live URL</p>
+        <UrlBar />
+      </div>
+    </aside>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Page
+// ---------------------------------------------------------------------------
+export default function Page() {
+  const [activeId, setActiveId] = useState(EXAMPLES[0].id)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const observerRef = useRef<IntersectionObserver | null>(null)
+
+  // Track which example is in view via IntersectionObserver
+  useEffect(() => {
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        // Pick the entry closest to the top of the viewport
+        const visible = entries
+          .filter(e => e.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)
+        if (visible.length > 0) {
+          setActiveId(visible[0].target.id)
+        }
+      },
+      { rootMargin: '-10% 0px -70% 0px', threshold: 0 }
+    )
+
+    EXAMPLES.forEach(ex => {
+      const el = document.getElementById(ex.id)
+      if (el) observerRef.current?.observe(el)
+    })
+
+    return () => observerRef.current?.disconnect()
+  }, [])
+
+  return (
+    <div className="min-h-screen bg-[#0a0a0f] text-white">
+
+      {/* Ambient glow */}
+      <div className="pointer-events-none fixed inset-0 overflow-hidden">
+        <div className="absolute -top-40 -left-40 w-150 h-150 rounded-full bg-violet-600/10 blur-[120px]" />
+        <div className="absolute top-1/2 -right-40 w-125 h-125 rounded-full bg-blue-600/6 blur-[120px]" />
+      </div>
+
+      {/* Nav */}
+      <nav className="sticky top-0 z-30 flex items-center justify-between px-4 sm:px-6 py-3.5 border-b border-white/6 backdrop-blur-md bg-[#0a0a0f]/85">
+        <div className="flex items-center gap-3">
+          {/* Mobile sidebar toggle */}
+          <button
+            onClick={() => setSidebarOpen(v => !v)}
+            className="lg:hidden p-1.5 rounded-lg border border-white/10 text-zinc-400 hover:text-white hover:bg-white/5 transition"
+          >
+            {sidebarOpen ? <X size={16} /> : <Menu size={16} />}
+          </button>
+          <Link href="/" className="flex items-center gap-2 text-base text-zinc-400 hover:text-white transition-colors">
+            <ArrowLeft size={15} /> Docs
+          </Link>
+        </div>
+        <span className="text-base font-bold bg-linear-to-r from-violet-400 to-blue-400 bg-clip-text text-transparent">
+          next-query-sync · Live Examples
+        </span>
+        <div className="flex items-center gap-2">
+          <span className="hidden sm:flex items-center gap-1.5 text-sm text-zinc-500">
+            <Play size={11} className="text-violet-400" />
+            {EXAMPLES.length} demos
+          </span>
+        </div>
+      </nav>
+
+      <div className="flex relative z-10">
+
+        {/* Desktop sidebar */}
+        <div className="hidden lg:block">
+          <Sidebar activeId={activeId} />
+        </div>
+
+        {/* Mobile sidebar overlay */}
+        {sidebarOpen && (
+          <div className="lg:hidden fixed inset-0 z-20 flex">
+            <div className="w-64 bg-[#0a0a0f] border-r border-white/10 h-full overflow-y-auto pt-[57px]">
+              <Sidebar activeId={activeId} />
+            </div>
+            <div className="flex-1 bg-black/50 backdrop-blur-sm" onClick={() => setSidebarOpen(false)} />
+          </div>
+        )}
 
         {/* Main content */}
-        <main className="flex-1 overflow-y-auto p-8">
-          <div className="max-w-2xl mx-auto">
-            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-              <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-3">
-                <span className="flex items-center justify-center w-7 h-7 rounded-full bg-blue-100 text-blue-700 text-xs font-bold">
-                  {active.id}
-                </span>
-                <h2 className="text-sm font-semibold text-gray-800">{active.title}</h2>
-              </div>
-              <div className="px-5 py-5">{active.component}</div>
+        <main className="flex-1 min-w-0 px-4 sm:px-8 py-8 space-y-8 max-w-5xl mx-auto">
+          {/* Mini header above first card */}
+          <div className="flex items-center gap-3 pb-2 border-b border-white/6">
+            <div className="flex items-center gap-2 text-sm text-zinc-500">
+              <Play size={11} className="text-violet-400" />
+              Interactive · All demos sync with the URL bar in the sidebar
             </div>
+          </div>
+
+          {EXAMPLES.map(e => (
+            <ExampleCard key={e.id} {...e} />
+          ))}
+
+          <div className="pt-4 border-t border-white/6 text-center">
+            <Link href="/" className="text-sm text-zinc-600 hover:text-zinc-400 transition-colors">
+              ← Back to docs
+            </Link>
           </div>
         </main>
       </div>
-
-      <footer className="text-center py-4 text-xs text-gray-400 border-t bg-white shrink-0">
-        next-query-sync · MIT
-      </footer>
     </div>
-  )
-}
-
-export default function Page() {
-  return (
-    <Suspense fallback={<div className="p-8 text-center text-gray-500 animate-pulse">Đang load…</div>}>
-      <PageContent />
-    </Suspense>
   )
 }

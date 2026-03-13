@@ -28,6 +28,17 @@ export interface UseQueryStateOptions {
 /** Primitive types supported by auto-inference. */
 export type Primitive = string | number | boolean;
 
+/**
+ * Widens a primitive literal type to its base type.
+ * e.g. `0` → `number`, `false` → `boolean`, `''` → `string`
+ * This prevents TypeScript from locking the setter to a narrow literal type.
+ */
+type WidenPrimitive<T extends Primitive> = T extends number
+  ? number
+  : T extends boolean
+    ? boolean
+    : string;
+
 type Updater<T> = T | null | ((prev: T | null) => T | null);
 type UpdaterNoNull<T> = T | ((prev: T) => T);
 
@@ -121,12 +132,12 @@ function inferParser<T extends Primitive>(defaultValue: T): ParserWithDefault<T>
 // Overloads
 // ---------------------------------------------------------------------------
 
-// 1. Primitive default → auto-inferred parser, never null
+// 1. Primitive default → auto-inferred parser, widens literal type, never null
 export function useQueryState<T extends Primitive>(
   key: string,
   defaultValue: T,
   options?: UseQueryStateOptions
-): [T, (updater: UpdaterNoNull<T>) => void];
+): [WidenPrimitive<T>, (updater: UpdaterNoNull<WidenPrimitive<T>>) => void];
 
 // 2. ZodDefault (schema with .default()) → never null
 export function useQueryState<T>(
@@ -197,9 +208,10 @@ export function useQueryState<T>(
     parser = inferParser(primitiveDefault) as unknown as Parser<T>;
   } else if (isZodDefaultLike<T>(parserOrDefault)) {
     // Case 2: Zod schema with .default()
-    // Zod v3: defaultValue is a function; Zod v4: defaultValue is the raw value
+    // Zod v3: defaultValue is a zero-arg function; Zod v4: defaultValue is the raw value
     const rawDefault = parserOrDefault._def.defaultValue;
-    const defaultValue = typeof rawDefault === 'function' ? rawDefault() : rawDefault;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const defaultValue: T = typeof rawDefault === 'function' ? (rawDefault as any)() : rawDefault;
     parser = zodToParser(parserOrDefault).withDefault(defaultValue) as unknown as Parser<T>;
   } else if (isZodLike<T>(parserOrDefault)) {
     // Case 3: Zod schema without .default()
