@@ -1,9 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import {
+  makeParser,
   parseAsString,
   parseAsInteger,
   parseAsFloat,
   parseAsBoolean,
+  parseAsIsoDateTime,
   parseAsArrayOf,
   withDefault,
 } from '../parsers';
@@ -103,5 +105,102 @@ describe('withDefault', () => {
   it('exposes defaultValue', () => {
     const p = withDefault(parseAsString, 'default');
     expect(p.defaultValue).toBe('default');
+  });
+});
+
+describe('.withDefault() method chaining', () => {
+  it('parseAsInteger.withDefault(0) returns 0 for null', () => {
+    const p = parseAsInteger.withDefault(0);
+    expect(p.parse(null)).toBe(0);
+    expect(p.parse('')).toBe(0);
+    expect(p.parse('abc')).toBe(0);
+  });
+
+  it('parseAsInteger.withDefault(0) returns parsed value', () => {
+    const p = parseAsInteger.withDefault(0);
+    expect(p.parse('42')).toBe(42);
+  });
+
+  it('parseAsString.withDefault("") returns empty string for null', () => {
+    const p = parseAsString.withDefault('');
+    expect(p.parse(null)).toBe('');
+    expect(p.parse('hello')).toBe('hello');
+  });
+
+  it('parseAsBoolean.withDefault(false) returns false for null', () => {
+    const p = parseAsBoolean.withDefault(false);
+    expect(p.parse(null)).toBe(false);
+    expect(p.parse('true')).toBe(true);
+  });
+
+  it('exposes defaultValue on chained parser', () => {
+    const p = parseAsFloat.withDefault(1.5);
+    expect(p.defaultValue).toBe(1.5);
+  });
+
+  it('can re-chain to change default', () => {
+    const p = parseAsInteger.withDefault(1).withDefault(99);
+    expect(p.parse(null)).toBe(99);
+    expect(p.defaultValue).toBe(99);
+  });
+
+  it('withDefault HOF and .withDefault() produce same result', () => {
+    const a = withDefault(parseAsInteger, 5);
+    const b = parseAsInteger.withDefault(5);
+    expect(a.parse(null)).toBe(b.parse(null));
+    expect(a.parse('10')).toBe(b.parse('10'));
+    expect(a.defaultValue).toBe(b.defaultValue);
+  });
+});
+
+describe('makeParser', () => {
+  it('creates a custom parser with withDefault method', () => {
+    const parseAsCsv = makeParser<string[]>(
+      (v) => (v === null ? null : v.split(',')),
+      (v) => v.join(',')
+    );
+    expect(parseAsCsv.parse('a,b')).toEqual(['a', 'b']);
+    expect(parseAsCsv.parse(null)).toBeNull();
+
+    const withDef = parseAsCsv.withDefault([]);
+    expect(withDef.parse(null)).toEqual([]);
+    expect(withDef.defaultValue).toEqual([]);
+  });
+});
+
+describe('parseAsIsoDateTime', () => {
+  const ISO = '2026-03-13T09:00:00.000Z';
+  const date = new Date(ISO);
+
+  it('parses a valid ISO string', () => {
+    const result = parseAsIsoDateTime.parse(ISO);
+    expect(result).toBeInstanceOf(Date);
+    expect(result?.getTime()).toBe(date.getTime());
+  });
+
+  it('returns null for null or empty string', () => {
+    expect(parseAsIsoDateTime.parse(null)).toBeNull();
+    expect(parseAsIsoDateTime.parse('')).toBeNull();
+  });
+
+  it('returns null for invalid date strings', () => {
+    expect(parseAsIsoDateTime.parse('not-a-date')).toBeNull();
+  });
+
+  it('serializes a Date to ISO string', () => {
+    expect(parseAsIsoDateTime.serialize(date)).toBe(ISO);
+  });
+
+  it('.withDefault() returns default for null', () => {
+    const p = parseAsIsoDateTime.withDefault(date);
+    expect(p.parse(null)).toBe(date);
+    expect(p.parse('')).toBe(date);
+    expect(p.parse('bad')).toBe(date);
+  });
+
+  it('.withDefault() returns parsed Date for valid input', () => {
+    const p = parseAsIsoDateTime.withDefault(date);
+    const other = '2025-01-01T00:00:00.000Z';
+    expect(p.parse(other)?.getTime()).toBe(new Date(other).getTime());
   });
 });
