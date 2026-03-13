@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   withDefault,
   parseAsInteger,
@@ -17,7 +17,23 @@ import {
   Package,
   Play,
   BookOpen,
+  ArrowRight,
+  Sparkles,
 } from 'lucide-react'
+
+// ---------------------------------------------------------------------------
+// Feature section — auto-inference code snippet HTML
+// ---------------------------------------------------------------------------
+const AUTO_INFERENCE_HTML = [
+  '<span style="color:#6b7280">// \u274c nuqs \u2014 import every parser manually</span>',
+  '<span style="color:#60a5fa">import</span> { parseAsInteger, parseAsString, parseAsBoolean } <span style="color:#60a5fa">from</span> <span style="color:#a78bfa">\'nuqs\'</span>',
+  '<span style="color:#34d399">useQueryState</span>(<span style="color:#fbbf24">\'page\'</span>, parseAsInteger.<span style="color:#34d399">withDefault</span>(<span style="color:#fb923c">1</span>))',
+  '',
+  '<span style="color:#6b7280">// \u2705 next-query-sync \u2014 just like useState</span>',
+  '<span style="color:#60a5fa">const</span> [page, setPage] = <span style="color:#34d399">useQueryState</span>(<span style="color:#fbbf24">\'page\'</span>, <span style="color:#fb923c">1</span>)',
+  '<span style="color:#60a5fa">const</span> [q,    setQ   ] = <span style="color:#34d399">useQueryState</span>(<span style="color:#fbbf24">\'q\'</span>,    <span style="color:#fbbf24">\'\'</span>)',
+  '<span style="color:#60a5fa">const</span> [open, setOpen] = <span style="color:#34d399">useQueryState</span>(<span style="color:#fbbf24">\'modal\'</span>, <span style="color:#fb923c">false</span>)',
+].join('\n')
 
 // ---------------------------------------------------------------------------
 // CopyButton
@@ -407,6 +423,157 @@ function HowItWorksSection() {
 }
 
 // ---------------------------------------------------------------------------
+// Hero Code Comparison
+// ---------------------------------------------------------------------------
+const nuqsCode = `import { useQueryState } from 'nuqs'
+import { parseAsInteger } from 'nuqs'
+import { parseAsString  } from 'nuqs'
+import { parseAsBoolean } from 'nuqs'
+
+const [page, setPage] = useQueryState(
+  'page',
+  parseAsInteger.withDefault(1)
+)
+const [q, setQ] = useQueryState(
+  'q',
+  parseAsString.withDefault('')
+)
+const [open, setOpen] = useQueryState(
+  'modal',
+  parseAsBoolean.withDefault(false)
+)`
+
+const ourCode = `import { useQueryState } from 'next-query-sync'
+
+// Type inferred from default value ✨
+const [page, setPage] = useQueryState('page', 1)
+const [q,    setQ   ] = useQueryState('q',    '')
+const [open, setOpen] = useQueryState('modal', false)
+
+// Also supports Zod, custom parsers & debounce:
+const [filter, setFilter] = useQueryState('f', MyZodSchema)
+const [search, setSearch] = useQueryState('q', '', { debounce: 300 })`
+
+const URL_STATES = [
+  '?page=1',
+  '?page=5&q=react',
+  '?page=2&modal=true',
+  '?page=3&q=typescript',
+  '?page=1&q=nextjs&modal=true',
+]
+
+function hlHero(line: string): string {
+  return line
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/('nuqs'|'next-query-sync')/g, '<span style="color:#a78bfa">$1</span>')
+    .replace(/"([^"]+)"/g, '<span style="color:#fbbf24">"$1"</span>')
+    .replace(/\b(import|from|const)\b/g, '<span style="color:#60a5fa">$1</span>')
+    .replace(/\b(useQueryState|parseAsInteger|parseAsString|parseAsBoolean)\b/g, '<span style="color:#34d399">$1</span>')
+    .replace(/(\/\/.*$)/g, '<span style="color:#52525b">$1</span>')
+    .replace(/✨/g, '<span>✨</span>')
+}
+
+function HeroCodeComparison() {
+  const [tab, setTab] = useState<'nuqs' | 'ours'>('ours')
+  const [urlIdx, setUrlIdx] = useState(0)
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setUrlIdx(i => (i + 1) % URL_STATES.length)
+    }, 2000)
+    return () => clearInterval(id)
+  }, [])
+
+  const code = tab === 'nuqs' ? nuqsCode : ourCode
+  const lines = code.split('\n')
+
+  return (
+    <div className="relative animate-fade-up" style={{ animationDelay: '0.2s' }}>
+      {/* Glow ring behind the card */}
+      <div className="absolute -inset-px rounded-2xl bg-linear-to-br from-violet-500/30 via-blue-500/20 to-transparent blur-sm pointer-events-none" />
+
+      <div className="relative rounded-2xl border border-white/10 bg-[#0d0d14] overflow-hidden shadow-2xl shadow-black/60">
+        {/* Title bar */}
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-white/8 bg-white/2">
+          <span className="w-3 h-3 rounded-full bg-red-500/70" />
+          <span className="w-3 h-3 rounded-full bg-yellow-500/70" />
+          <span className="w-3 h-3 rounded-full bg-green-500/70" />
+          <span className="ml-2 text-xs text-zinc-600 font-mono">filters.tsx</span>
+
+          {/* Tabs */}
+          <div className="ml-auto flex items-center gap-1 bg-white/5 rounded-lg p-0.5">
+            <button
+              onClick={() => setTab('nuqs')}
+              className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
+                tab === 'nuqs'
+                  ? 'bg-white/10 text-zinc-200'
+                  : 'text-zinc-600 hover:text-zinc-400'
+              }`}
+            >
+              nuqs
+            </button>
+            <button
+              onClick={() => setTab('ours')}
+              className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
+                tab === 'ours'
+                  ? 'bg-violet-500/20 text-violet-300'
+                  : 'text-zinc-600 hover:text-zinc-400'
+              }`}
+            >
+              next-query-sync ✨
+            </button>
+          </div>
+        </div>
+
+        {/* Code */}
+        <pre className="px-5 pt-5 pb-4 text-sm font-mono leading-[1.7] overflow-x-auto min-h-[240px]">
+          <code>
+            {lines.map((line, i) => (
+              <div key={`${tab}-${i}`} className="flex">
+                <span className="select-none w-6 shrink-0 text-zinc-700 text-right mr-5 tabular-nums text-xs leading-[1.7]">{i + 1}</span>
+                <span dangerouslySetInnerHTML={{ __html: hlHero(line) || '&nbsp;' }} />
+              </div>
+            ))}
+          </code>
+        </pre>
+
+        {/* Line count badge */}
+        {tab === 'ours' && (
+          <div className="absolute top-12 right-4 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-violet-500/15 border border-violet-500/25 text-xs text-violet-300 font-medium">
+            <Sparkles size={10} />
+            6× less code
+          </div>
+        )}
+
+        {/* Live URL bar */}
+        <div className="px-5 pb-5">
+          <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-black/40 border border-white/6 font-mono text-sm">
+            <span className="text-zinc-600 shrink-0">localhost:3000</span>
+            <span
+              key={urlIdx}
+              className="text-violet-400 animate-fade-up"
+              style={{ animationDuration: '0.3s' }}
+            >
+              {URL_STATES[urlIdx]}
+            </span>
+            <span className="text-violet-500 animate-blink ml-0.5">|</span>
+          </div>
+          <p className="mt-2 text-xs text-zinc-600 text-center">URL updates in real-time · Back/Forward works · SSR-safe</p>
+        </div>
+      </div>
+
+      {/* Floating badges */}
+      <div className="absolute -top-3 -left-4 px-3 py-1.5 rounded-full bg-[#0d0d14] border border-green-500/30 text-xs text-green-400 font-medium shadow-lg animate-float" style={{ animationDelay: '0s' }}>
+        ✓ TypeScript native
+      </div>
+      <div className="absolute -bottom-3 -right-4 px-3 py-1.5 rounded-full bg-[#0d0d14] border border-blue-500/30 text-xs text-blue-400 font-medium shadow-lg animate-float" style={{ animationDelay: '1.5s' }}>
+        ✓ Zero dependencies
+      </div>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Page
 // ---------------------------------------------------------------------------
 export default function Page() {
@@ -443,75 +610,278 @@ export default function Page() {
       </nav>
 
       {/* ── HERO ─────────────────────────────────────────────── */}
-      <section className="relative z-10 flex flex-col items-center text-center px-6 pt-24 pb-28 sm:pt-32 sm:pb-36">
-        <div className="mb-6 inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-violet-500/30 bg-violet-500/10 text-xs text-violet-300">
-          <Package size={12} />
-          v1.0.0 · Now on npm
+      <section className="relative z-10 px-6 sm:px-10 pt-16 sm:pt-24 pb-24 sm:pb-32 max-w-7xl mx-auto">
+
+        {/* Dot grid */}
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.055) 1px, transparent 1px)', backgroundSize: '28px 28px' }}
+        />
+        {/* Gradient fade edges on grid */}
+        <div className="pointer-events-none absolute inset-0 bg-linear-to-b from-[#0a0a0f] via-transparent to-[#0a0a0f]" />
+        <div className="pointer-events-none absolute inset-0 bg-linear-to-r from-[#0a0a0f] via-transparent to-[#0a0a0f]" />
+
+        {/* Bottom separator line */}
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-2/3 h-px bg-linear-to-r from-transparent via-violet-500/30 to-transparent" />
+
+        <div className="relative grid lg:grid-cols-[1fr_1.15fr] gap-12 lg:gap-20 items-center">
+
+          {/* ── LEFT ──────────────────────────────────────────── */}
+          <div className="animate-fade-up">
+
+            {/* Badge */}
+            <div className="mb-8 inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full border border-violet-500/30 bg-violet-500/10 text-sm text-violet-300">
+              <span className="inline-block w-2 h-2 rounded-full bg-violet-400 animate-pulse" />
+              v1.0.0 · Now on npm
+              <ArrowRight size={12} className="opacity-60" />
+            </div>
+
+            {/* Headline */}
+            <h1 className="mb-7 font-black tracking-tight leading-[0.9]">
+              <span className="block text-5xl sm:text-6xl lg:text-[72px] text-white">URL State,</span>
+              <span className="block text-5xl sm:text-6xl lg:text-[72px] text-zinc-600 mt-1">as simple as</span>
+              <span
+                className="block text-5xl sm:text-6xl lg:text-[72px] mt-1 animate-shimmer"
+                style={{ background: 'linear-gradient(90deg,#a78bfa,#60a5fa,#a78bfa,#60a5fa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}
+              >
+                useState.
+              </span>
+            </h1>
+
+            {/* Subtext */}
+            <p className="mb-8 text-lg sm:text-xl text-zinc-400 leading-relaxed max-w-lg">
+              Drop-in URL sync for React & Next.js. Type inferred from default value —
+              no parsers to import, no boilerplate to write.
+            </p>
+
+            {/* CTAs */}
+            <div className="mb-8 flex flex-col sm:flex-row items-start gap-3">
+              <Link
+                href="/example"
+                className="flex items-center gap-2 px-6 py-3 rounded-xl bg-linear-to-r from-violet-600 to-blue-600 text-white font-semibold text-sm hover:from-violet-500 hover:to-blue-500 transition-all duration-200 shadow-lg shadow-violet-500/25"
+              >
+                <Play size={15} /> Live Examples
+              </Link>
+              <a
+                href="#api"
+                className="flex items-center gap-2 px-6 py-3 rounded-xl border border-white/15 text-zinc-300 font-semibold text-sm hover:border-white/30 hover:text-white transition-all duration-200"
+              >
+                <BookOpen size={15} /> API Reference
+              </a>
+            </div>
+
+            {/* Install box */}
+            <InstallBox />
+
+            {/* Stats */}
+            <div className="mt-6 flex flex-wrap items-center gap-2">
+              {[
+                '0 dependencies',
+                '< 2KB gzip',
+                'TypeScript native',
+                'React 18+',
+                'App Router ready',
+              ].map(stat => (
+                <span
+                  key={stat}
+                  className="px-3 py-1 rounded-full border border-white/8 bg-white/3 text-xs text-zinc-500 font-medium"
+                >
+                  {stat}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* ── RIGHT: code comparison ────────────────────────── */}
+          <HeroCodeComparison />
+
         </div>
-
-        <h1 className="mb-6 text-6xl sm:text-8xl font-black tracking-tight leading-none">
-          <span className="bg-linear-to-r from-violet-400 via-blue-400 to-violet-300 bg-clip-text text-transparent drop-shadow-[0_0_60px_rgba(139,92,246,0.4)]">
-            next-query-sync
-          </span>
-        </h1>
-
-        <p className="mb-4 max-w-xl text-xl sm:text-2xl text-zinc-400 leading-relaxed">
-          Type-safe URL Search Params for Next.js.
-        </p>
-        <p className="mb-10 max-w-lg text-base text-zinc-500">
-          Blazing fast.{' '}
-          <span className="text-violet-400">Zero redundant re-renders.</span>{' '}
-          SSR-safe. Built on{' '}
-          <code className="text-zinc-300 bg-white/5 px-1.5 py-0.5 rounded text-sm">useSyncExternalStore</code>.
-        </p>
-
-        <div className="mb-10 flex flex-col sm:flex-row items-center gap-4">
-          <Link
-            href="/example"
-            className="flex items-center gap-2 px-7 py-3 rounded-xl bg-linear-to-r from-violet-600 to-blue-600 text-white font-semibold text-sm hover:from-violet-500 hover:to-blue-500 transition-all duration-200 shadow-lg shadow-violet-500/25"
-          >
-            <Play size={16} /> Live Examples
-          </Link>
-          <a
-            href="#api"
-            className="flex items-center gap-2 px-7 py-3 rounded-xl border border-white/15 text-zinc-300 font-semibold text-sm hover:border-white/30 hover:text-white transition-all duration-200"
-          >
-            <BookOpen size={16} /> API Reference
-          </a>
-        </div>
-
-        <InstallBox />
       </section>
 
       {/* ── FEATURES ─────────────────────────────────────────── */}
-      <section className="relative z-10 px-6 sm:px-10 pb-28 max-w-5xl mx-auto">
-        <div className="mb-12 text-center">
-          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-3">Why next-query-sync?</h2>
-          <p className="text-zinc-500 max-w-md mx-auto">
-            Everything you need for production-grade URL state management in one tiny package.
+      <section className="relative z-10 px-6 sm:px-10 pb-28 max-w-6xl mx-auto">
+
+        {/* Section header */}
+        <div className="mb-16 text-center">
+          <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-violet-500/25 bg-violet-500/8 text-sm text-violet-400 font-medium mb-6">
+            <Sparkles size={13} />
+            Built different
+          </span>
+          <h2 className="text-4xl sm:text-5xl font-black text-white tracking-tight mb-4">
+            Why switch to{' '}
+            <span className="bg-linear-to-r from-violet-400 to-blue-400 bg-clip-text text-transparent">
+              next-query-sync?
+            </span>
+          </h2>
+          <p className="text-zinc-500 text-lg max-w-xl mx-auto leading-relaxed">
+            Every feature is designed to eliminate boilerplate and ship faster — without sacrificing type safety or performance.
           </p>
         </div>
 
-        <div className="grid gap-5 sm:grid-cols-3">
-          <FeatureCard
-            icon={<ShieldCheck size={20} />}
-            gradient="from-violet-500 to-purple-700"
-            title="Type-Safe"
-            description="TypeScript infers exact output types from your parser schema. withDefault narrows T | null to T — no casting, no runtime surprises."
-          />
-          <FeatureCard
-            icon={<Zap size={20} />}
-            gradient="from-yellow-500 to-orange-600"
-            title="Smart Batching"
-            description="queueMicrotask coalesces multiple param changes into one history.replaceState call — zero redundant re-renders and no FPS drops."
-          />
-          <FeatureCard
-            icon={<Server size={20} />}
-            gradient="from-blue-500 to-cyan-600"
-            title="SSR & App Router Ready"
-            description="Works flawlessly on the server. Every window access is guarded. useSyncExternalStore prevents UI tearing in Concurrent Mode."
-          />
+        {/* Big 2-col feature: Auto-Inference */}
+        <div className="mb-5 group relative rounded-3xl border border-white/8 bg-white/2 hover:border-violet-500/25 transition-all duration-500 overflow-hidden">
+          {/* Glow */}
+          <div className="pointer-events-none absolute -top-24 -left-24 w-72 h-72 rounded-full bg-violet-600/10 blur-3xl group-hover:bg-violet-600/15 transition-all duration-700" />
+          <div className="grid lg:grid-cols-2 gap-0">
+            {/* Text */}
+            <div className="p-8 sm:p-10 flex flex-col justify-center">
+              <div className="mb-5 inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-linear-to-br from-violet-500 to-purple-700 text-white shadow-lg shadow-violet-500/20">
+                <Sparkles size={22} />
+              </div>
+              <div className="mb-2 text-xs font-semibold text-violet-400 uppercase tracking-widest">Killer feature #1</div>
+              <h3 className="text-2xl sm:text-3xl font-bold text-white mb-4 leading-tight">
+                useState syntax.<br />
+                <span className="text-zinc-400">No parser imports.</span>
+              </h3>
+              <p className="text-base text-zinc-400 leading-relaxed mb-6">
+                Pass a primitive default and the library infers the type, picks the right parser, and serializes back automatically. 90% of real apps need nothing else.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {['number → parseAsInteger', 'boolean → parseAsBoolean', 'string → parseAsString'].map(tag => (
+                  <span key={tag} className="px-3 py-1 rounded-full bg-violet-500/10 border border-violet-500/20 text-xs text-violet-300 font-mono">{tag}</span>
+                ))}
+              </div>
+            </div>
+            {/* Code */}
+            <div className="p-8 sm:p-10 lg:border-l border-white/6 flex items-center">
+              <div className="w-full rounded-2xl border border-white/10 bg-[#080810] overflow-hidden">
+                <div className="flex items-center gap-1.5 px-4 py-2.5 border-b border-white/6">
+                  <span className="w-2.5 h-2.5 rounded-full bg-red-500/60" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-yellow-500/60" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-green-500/60" />
+                  <span className="ml-2 text-xs text-zinc-600 font-mono">page.tsx</span>
+                </div>
+                <pre className="px-5 py-5 text-sm font-mono leading-[1.8] overflow-x-auto"><code dangerouslySetInnerHTML={{ __html: AUTO_INFERENCE_HTML }} /></pre>
+              </div>
+            </div>
+          </div>
         </div>
+
+        {/* 3 smaller cards row */}
+        <div className="grid gap-5 sm:grid-cols-3 mb-5">
+
+          {/* Type-Safe */}
+          <div className="group relative rounded-2xl border border-white/8 bg-white/2 p-7 hover:border-violet-500/20 hover:bg-violet-500/3 transition-all duration-300 overflow-hidden">
+            <div className="pointer-events-none absolute -bottom-8 -right-8 w-32 h-32 rounded-full bg-violet-600/8 blur-2xl group-hover:bg-violet-600/15 transition-all" />
+            <div className="mb-5 inline-flex items-center justify-center w-11 h-11 rounded-xl bg-linear-to-br from-violet-500 to-purple-700 text-white">
+              <ShieldCheck size={19} />
+            </div>
+            <div className="mb-1 text-xs font-semibold text-violet-400 uppercase tracking-widest">Type-Safe by default</div>
+            <h3 className="text-lg font-bold text-white mb-3">Zero casts.<br />Zero surprises.</h3>
+            <p className="text-sm text-zinc-400 leading-relaxed">TypeScript infers the exact return type from your default. <code className="text-violet-300 text-xs bg-violet-500/10 px-1 py-0.5 rounded">withDefault</code> narrows <code className="text-zinc-300 text-xs bg-white/5 px-1 py-0.5 rounded">T | null</code> to <code className="text-zinc-300 text-xs bg-white/5 px-1 py-0.5 rounded">T</code> at the type level.</p>
+          </div>
+
+          {/* Smart Batching */}
+          <div className="group relative rounded-2xl border border-white/8 bg-white/2 p-7 hover:border-yellow-500/20 hover:bg-yellow-500/3 transition-all duration-300 overflow-hidden">
+            <div className="pointer-events-none absolute -bottom-8 -right-8 w-32 h-32 rounded-full bg-yellow-600/8 blur-2xl group-hover:bg-yellow-600/15 transition-all" />
+            <div className="mb-5 inline-flex items-center justify-center w-11 h-11 rounded-xl bg-linear-to-br from-yellow-500 to-orange-600 text-white">
+              <Zap size={19} />
+            </div>
+            <div className="mb-1 text-xs font-semibold text-yellow-500 uppercase tracking-widest">Performance</div>
+            <h3 className="text-lg font-bold text-white mb-3">Smart batching.<br />0 wasted renders.</h3>
+            <p className="text-sm text-zinc-400 leading-relaxed"><code className="text-yellow-300 text-xs bg-yellow-500/10 px-1 py-0.5 rounded">queueMicrotask</code> coalesces every param change in the same tick into one single <code className="text-zinc-300 text-xs bg-white/5 px-1 py-0.5 rounded">replaceState</code> call — no FPS drops.</p>
+          </div>
+
+          {/* SSR */}
+          <div className="group relative rounded-2xl border border-white/8 bg-white/2 p-7 hover:border-blue-500/20 hover:bg-blue-500/3 transition-all duration-300 overflow-hidden">
+            <div className="pointer-events-none absolute -bottom-8 -right-8 w-32 h-32 rounded-full bg-blue-600/8 blur-2xl group-hover:bg-blue-600/15 transition-all" />
+            <div className="mb-5 inline-flex items-center justify-center w-11 h-11 rounded-xl bg-linear-to-br from-blue-500 to-cyan-600 text-white">
+              <Server size={19} />
+            </div>
+            <div className="mb-1 text-xs font-semibold text-blue-400 uppercase tracking-widest">SSR & App Router</div>
+            <h3 className="text-lg font-bold text-white mb-3">Works on the server.<br />No hydration mismatch.</h3>
+            <p className="text-sm text-zinc-400 leading-relaxed">Every <code className="text-zinc-300 text-xs bg-white/5 px-1 py-0.5 rounded">window</code> access is guarded. <code className="text-blue-300 text-xs bg-blue-500/10 px-1 py-0.5 rounded">useSyncExternalStore</code> prevents tearing in Concurrent Mode.</p>
+          </div>
+        </div>
+
+        {/* 2-col: Zod + Debounce */}
+        <div className="grid gap-5 sm:grid-cols-2">
+
+          {/* Zod */}
+          <div className="group relative rounded-2xl border border-white/8 bg-white/2 p-7 hover:border-emerald-500/20 hover:bg-emerald-500/3 transition-all duration-300 overflow-hidden">
+            <div className="pointer-events-none absolute -top-10 -right-10 w-40 h-40 rounded-full bg-emerald-600/8 blur-3xl group-hover:bg-emerald-600/12 transition-all" />
+            <div className="flex items-start gap-4">
+              <div className="shrink-0 inline-flex items-center justify-center w-11 h-11 rounded-xl bg-linear-to-br from-emerald-500 to-teal-600 text-white">
+                <ShieldCheck size={19} />
+              </div>
+              <div>
+                <div className="mb-1 text-xs font-semibold text-emerald-400 uppercase tracking-widest">Killer feature #2</div>
+                <h3 className="text-xl font-bold text-white mb-2">Native Zod integration</h3>
+                <p className="text-sm text-zinc-400 leading-relaxed mb-4">
+                  Pass a Zod schema directly — the library auto-parses JSON, validates, and falls back to default on error. Works with v3 &amp; v4.
+                </p>
+                <div className="rounded-xl bg-[#080810] border border-white/8 px-4 py-3 font-mono text-xs text-zinc-300 leading-[1.7]">
+                  <div><span style={{color:'#60a5fa'}}>const</span> [filter, setFilter] = <span style={{color:'#34d399'}}>useQueryState</span>(</div>
+                  <div className="ml-4"><span style={{color:'#fbbf24'}}>'filter'</span>, MyZodSchema</div>
+                  <div>)</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Debounce */}
+          <div className="group relative rounded-2xl border border-white/8 bg-white/2 p-7 hover:border-pink-500/20 hover:bg-pink-500/3 transition-all duration-300 overflow-hidden">
+            <div className="pointer-events-none absolute -top-10 -right-10 w-40 h-40 rounded-full bg-pink-600/8 blur-3xl group-hover:bg-pink-600/12 transition-all" />
+            <div className="flex items-start gap-4">
+              <div className="shrink-0 inline-flex items-center justify-center w-11 h-11 rounded-xl bg-linear-to-br from-pink-500 to-rose-600 text-white">
+                <Zap size={19} />
+              </div>
+              <div>
+                <div className="mb-1 text-xs font-semibold text-pink-400 uppercase tracking-widest">Killer feature #3</div>
+                <h3 className="text-xl font-bold text-white mb-2">Built-in debounce &amp; transitions</h3>
+                <p className="text-sm text-zinc-400 leading-relaxed mb-4">
+                  Stop writing <code className="text-zinc-300 text-xs bg-white/5 px-1 py-0.5 rounded">useDebounce</code> wrappers. Built-in <code className="text-pink-300 text-xs bg-pink-500/10 px-1 py-0.5 rounded">debounce</code> + React 18 <code className="text-pink-300 text-xs bg-pink-500/10 px-1 py-0.5 rounded">startTransition</code> keeps the UI snappy.
+                </p>
+                <div className="rounded-xl bg-[#080810] border border-white/8 px-4 py-3 font-mono text-xs text-zinc-300 leading-[1.7]">
+                  <div><span style={{color:'#60a5fa'}}>const</span> [q, setQ] = <span style={{color:'#34d399'}}>useQueryState</span>(<span style={{color:'#fbbf24'}}>'q'</span>, <span style={{color:'#fbbf24'}}>''</span>, {'{'}</div>
+                  <div className="ml-4"><span style={{color:'#fb923c'}}>debounce</span>: <span style={{color:'#fb923c'}}>300</span>, <span style={{color:'#fb923c'}}>startTransition</span>: <span style={{color:'#fb923c'}}>true</span></div>
+                  <div>{'}'})</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* vs comparison table */}
+        <div className="mt-10 rounded-2xl border border-white/8 bg-white/2 overflow-hidden">
+          <div className="px-6 py-4 border-b border-white/6 flex items-center gap-3">
+            <span className="text-sm font-semibold text-white">Feature comparison</span>
+            <span className="ml-auto text-xs text-zinc-600">vs the competition</span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-white/6">
+                  <th className="text-left px-6 py-3 text-zinc-500 font-medium w-1/2">Feature</th>
+                  <th className="px-6 py-3 text-zinc-500 font-medium text-center">nuqs</th>
+                  <th className="px-6 py-3 text-zinc-500 font-medium text-center">next-query-params</th>
+                  <th className="px-6 py-3 font-semibold text-center">
+                    <span className="text-violet-300">next-query-sync</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  ['useState-like syntax (auto-inference)', '❌', '❌', '✅'],
+                  ['Zod schema support (1 line)', '❌', '❌', '✅'],
+                  ['Built-in debounce + startTransition', '❌', '❌', '✅'],
+                  ['React 18 useSyncExternalStore', '✅', '❌', '✅'],
+                  ['SSR & App Router safe', '✅', '⚠️', '✅'],
+                  ['Smart param batching', '✅', '❌', '✅'],
+                  ['Bundle size (gzip)', '~7KB', '~5KB', '< 2KB'],
+                ].map(([feature, nuqs, nqp, ours], i) => (
+                  <tr key={i} className="border-b border-white/4 last:border-0 hover:bg-white/2 transition-colors">
+                    <td className="px-6 py-3.5 text-zinc-300">{feature}</td>
+                    <td className="px-6 py-3.5 text-center text-zinc-500">{nuqs}</td>
+                    <td className="px-6 py-3.5 text-center text-zinc-500">{nqp}</td>
+                    <td className="px-6 py-3.5 text-center font-medium text-violet-300">{ours}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
       </section>
 
       {/* ── EXAMPLES CTA ─────────────────────────────────────── */}
