@@ -256,8 +256,8 @@ describe('useQueryState — Zod schema integration', () => {
 });
 
 describe('useQueryState — debounce option', () => {
-  beforeEach(() => vi.useFakeTimers());
-  afterEach(() => vi.useRealTimers());
+  beforeEach(() => { vi.useFakeTimers() });
+  afterEach(() => { vi.useRealTimers() });
 
   it('shows optimistic value immediately while debouncing', () => {
     const { result } = renderHook(() => useQueryState('q', '', { debounce: 300 }));
