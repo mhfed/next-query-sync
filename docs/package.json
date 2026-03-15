@@ -11,9 +11,10 @@
   "dependencies": {
     "lucide-react": "^0.577.0",
     "next": "16.1.6",
+    "next-query-sync": "file:../packages",
     "react": "19.2.3",
     "react-dom": "19.2.3",
-    "next-query-sync": "file:../packages"
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
