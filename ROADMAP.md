@@ -18,7 +18,7 @@ This roadmap focuses on correctness, maintainability, real-world validation, and
 ## Days 8–14 — compatibility and integration confidence
 
 - [x] Add compile-time public API tests for hook overloads and parser defaults.
-- [ ] Define strict behavior for integer/float parsing edge cases (tracked separately as a compatibility-sensitive design decision).
+- [x] Define strict integer/float grammar without changing published legacy parser semantics: keep `parseAsInteger` / `parseAsFloat` compatible and add explicit strict alternatives.
 - [x] Add deterministic browser history regression coverage for Back/Forward `popstate` restoration.
 - [x] Add a minimal Next.js App Router fixture that installs the packed package and validates the server/client build boundary.
 - [ ] Extend the Next.js fixture with browser-level hydration, URL update, reload, Back, and Forward coverage if deterministic hook coverage proves insufficient.
