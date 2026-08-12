@@ -20,7 +20,6 @@ env:
   PACKAGE_NAME: next-query-sync
   RELEASE_VERSION: 1.1.0
   RELEASE_TAG: v1.1.0
-  NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
 jobs:
   publish:
@@ -34,10 +33,11 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v5
+      - name: Setup Node.js for npm Trusted Publishing
+        uses: actions/setup-node@v7
         with:
           node-version: 24
+          registry-url: https://registry.npmjs.org
           package-manager-cache: false
 
       - name: Ensure npm supports trusted publishing
@@ -83,12 +83,8 @@ jobs:
           npm install --no-save --no-audit --no-fund "../../release-artifacts/$PACKAGE_NAME-$RELEASE_VERSION.tgz"
           npm run build
 
-      - name: Configure npm token fallback when available
-        if: env.NPM_TOKEN != ''
-        run: echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > "$HOME/.npmrc"
-
-      - name: Publish exact tarball to npm
-        run: npm publish "./release-artifacts/$PACKAGE_NAME-$RELEASE_VERSION.tgz" --access public --provenance
+      - name: Publish exact tarball to npm via OIDC
+        run: npm publish "./release-artifacts/$PACKAGE_NAME-$RELEASE_VERSION.tgz" --access public --provenance --loglevel verbose
 
       - name: Verify npm publication
         run: |
