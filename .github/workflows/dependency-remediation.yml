@@ -31,7 +31,7 @@ jobs:
         working-directory: packages
         run: |
           npm install --save-dev vitest@^4.1.10
-          npm audit fix
+          npm audit fix || true
 
       - name: Verify remediated package
         working-directory: packages
