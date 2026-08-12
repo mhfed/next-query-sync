@@ -42,9 +42,10 @@ This roadmap focuses on correctness, maintainability, real-world validation, and
 
 ## Days 27–30 — release discipline and evidence
 
-- [ ] Adopt a repeatable release process with explicit maintainer approval.
-- [ ] Use the manual Codex release audit before package publication.
-- [ ] Maintain `CHANGELOG.md` with user-visible changes and migration notes.
+- [x] Adopt a repeatable read-only release-candidate process with explicit maintainer approval before publication.
+- [x] Allow the Codex release audit to target the exact release candidate ref.
+- [ ] Run the manual Codex release audit before the next package publication once project API access is configured.
+- [x] Maintain `CHANGELOG.md` with user-visible changes and maintenance evidence.
 - [ ] Publish maintenance metrics based on real repository activity: releases, issues resolved, external contributors/users, CI health, and useful Codex-assisted maintenance work.
 - [ ] Review the next 30-day roadmap from actual user feedback rather than star-count targets.
 
