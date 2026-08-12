@@ -23,7 +23,7 @@ This roadmap focuses on correctness, maintainability, real-world validation, and
 - [ ] Extend the Next.js fixture with browser-level hydration, URL update, reload, Back, and Forward coverage if deterministic hook coverage proves insufficient.
 - [x] Test React 18/19 targets and document the concrete Next.js compatibility gate.
 - [x] Validate the npm tarball from a consumer project rather than importing library source paths.
-- [ ] Review generated artifacts currently committed under `packages/dist` and remove them from source control if release tooling no longer requires them.
+- [x] Remove generated `packages/dist` artifacts from source control while keeping clean-clone public type verification self-contained.
 
 ## Days 15–21 — documentation and real-world examples
 
