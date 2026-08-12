@@ -56,18 +56,18 @@ export default function ProductList() {
 
 ## API Reference
 
-### `useQueryState(key, parser, options?)`
+### `useQueryState(key, parserOrDefault, options?)`
 
-Syncs a single URL search param with React state.
+Syncs a single URL search param with React state. The second argument can be a primitive default, a built-in/custom parser, or a supported Zod schema.
 
 ```ts
-const [value, setValue] = useQueryState(key, parser, options?)
+const [value, setValue] = useQueryState(key, parserOrDefault, options?)
 ```
 
 | Param | Type | Description |
 |---|---|---|
 | `key` | `string` | URL search param name |
-| `parser` | `Parser<T>` | Determines how to parse/serialize the value |
+| `parserOrDefault` | `Primitive \| Parser<T> \| ZodLike<T>` | Determines parsing/default behavior |
 | `options.history` | `'push' \| 'replace'` | Default: `'replace'` |
 
 ```tsx
@@ -129,30 +129,22 @@ const [page, setPage] = useQueryState('page', pageParser)
 
 ### Custom Parsers
 
-Implement the `Parser<T>` interface for any custom type:
+Use `makeParser` to create a parser with the same `.withDefault()` contract as the built-ins:
 
 ```ts
-import type { Parser } from 'next-query-sync'
+import { makeParser } from 'next-query-sync'
 
-const parseAsDate: Parser<Date> = {
-  parse: (v) => {
-    if (!v) return null
-    const d = new Date(v)
-    return isNaN(d.getTime()) ? null : d
+const parseAsDate = makeParser<Date>(
+  (value) => {
+    if (!value) return null
+    const date = new Date(value)
+    return Number.isNaN(date.getTime()) ? null : date
   },
-  serialize: (d) => d.toISOString().split('T')[0]!,
-  withDefault(defaultValue) {
-    return {
-      ...this,
-      defaultValue,
-      parse: (v) => this.parse(v) ?? defaultValue,
-      withDefault: this.withDefault,
-    }
-  },
-}
+  (date) => date.toISOString().split('T')[0]!
+)
+
+const dateWithDefault = parseAsDate.withDefault(new Date('2026-01-01'))
 ```
-
-For most custom parsers, prefer the exported parser helpers/patterns used by the built-ins so the required `.withDefault()` contract stays intact.
 
 ---
 
