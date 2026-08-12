@@ -262,7 +262,6 @@ describe('useQueryState — debounce option', () => {
   it('shows optimistic value immediately while debouncing', () => {
     const { result } = renderHook(() => useQueryState('q', '', { debounce: 300 }));
     act(() => result.current[1]('hello'));
-    // Pending value is shown immediately (before URL updates)
     expect(result.current[0]).toBe('hello');
   });
 
@@ -270,10 +269,8 @@ describe('useQueryState — debounce option', () => {
     const { result } = renderHook(() => useQueryState('q', '', { debounce: 300 }));
 
     act(() => result.current[1]('hello'));
-    // URL not yet updated
     expect(new URLSearchParams(window.location.search).get('q')).toBeNull();
 
-    // Advance timers past debounce window
     await act(async () => {
       vi.advanceTimersByTime(300);
       await Promise.resolve();
@@ -295,22 +292,17 @@ describe('useQueryState — debounce option', () => {
       await Promise.resolve();
     });
 
-    // Only one URL write for all four keystrokes
     expect(spy).toHaveBeenCalledTimes(1);
     expect(new URLSearchParams(window.location.search).get('q')).toBe('hello');
     spy.mockRestore();
   });
 });
 
-describe('useQueryState — startTransition option', () => {
-  it('wraps URL update in startTransition when option is set', async () => {
-    const { startTransition } = await import('react');
-    const spy = vi.spyOn({ startTransition }, 'startTransition');
-    // We just verify the hook runs without error and updates URL
+describe('useQueryState — deprecated startTransition option', () => {
+  it('keeps existing callers source-compatible and preserves URL behavior', async () => {
     const { result } = renderHook(() => useQueryState('q', '', { startTransition: true }));
     act(() => result.current[1]('test'));
     await flush();
     expect(new URLSearchParams(window.location.search).get('q')).toBe('test');
-    spy.mockRestore();
   });
 });
