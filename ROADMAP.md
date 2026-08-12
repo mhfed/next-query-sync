@@ -50,6 +50,9 @@ This roadmap focuses on correctness, maintainability, real-world validation, and
 - [x] Adopt a repeatable read-only release-candidate process with explicit maintainer approval before publication.
 - [x] Allow the Codex release audit to target the exact release candidate ref.
 - [x] Add a 1.0.1 → planned 1.1.0 migration guide before changing the published package version.
+- [x] Separate consumer dependency audits from maintainer-toolchain audits and add the same thresholds to release-candidate validation.
+- [x] Upgrade the test toolchain and remove all high/critical pre-release audit findings; document the one remaining low development-only advisory.
+- [x] Move core checkout/setup-node workflows onto their Node 24 action runtime.
 - [ ] Produce and inspect a 1.1.0 release candidate artifact.
 - [ ] Publish 1.1.0 only after maintainer review of the candidate and final release notes.
 - [ ] Run the manual Codex release audit before a future package publication once project API access is configured.
@@ -61,5 +64,5 @@ This roadmap focuses on correctness, maintainability, real-world validation, and
 
 - Prefer real usage and reproducible maintenance evidence over vanity metrics.
 - Do not manufacture issues, contributors, stars, downloads, or adoption.
-- Keep deterministic CI authoritative for builds, types, tests, examples, package consumers, and docs.
+- Keep deterministic CI authoritative for builds, types, tests, examples, package consumers, docs, and release security thresholds.
 - Use AI review for repository-specific reasoning only when project API access is available; never make it a prerequisite for ordinary OSS maintenance.
