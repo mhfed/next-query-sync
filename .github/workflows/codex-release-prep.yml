@@ -2,6 +2,12 @@ name: Codex release preparation
 
 on:
   workflow_dispatch:
+    inputs:
+      candidate_ref:
+        description: Branch, tag, or commit SHA to audit
+        required: true
+        default: main
+        type: string
 
 permissions:
   contents: read
@@ -12,11 +18,21 @@ jobs:
     env:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
     steps:
-      - name: Checkout
+      - name: Checkout candidate ref
         uses: actions/checkout@v5
         with:
+          ref: ${{ inputs.candidate_ref }}
           fetch-depth: 0
           persist-credentials: false
+
+      - name: Record audited ref
+        run: |
+          {
+            echo "## Codex release audit"
+            echo
+            echo "- Requested ref: \`${{ inputs.candidate_ref }}\`"
+            echo "- Resolved commit: \`$(git rev-parse HEAD)\`"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Run Codex release audit
         id: run_codex
@@ -37,9 +53,10 @@ jobs:
         if: steps.run_codex.outputs.final-message != ''
         uses: actions/upload-artifact@v4
         with:
-          name: codex-release-audit
+          name: codex-release-audit-${{ github.run_number }}
           path: codex-release-audit.md
+          retention-days: 14
 
       - name: Explain skipped release audit
         if: env.OPENAI_API_KEY == ''
-        run: echo "Codex release audit skipped because OPENAI_API_KEY is not configured."
+        run: echo "Codex release audit skipped because OPENAI_API_KEY is not configured." >> "$GITHUB_STEP_SUMMARY"
