@@ -63,21 +63,20 @@ export function UrlBackedDataTable() {
 
   const filtered = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
+    const matching = products.filter((product) =>
+      normalizedQuery === ''
+        ? true
+        : product.name.toLowerCase().includes(normalizedQuery)
+    );
 
-    return products
-      .filter((product) =>
-        normalizedQuery === ''
-          ? true
-          : product.name.toLowerCase().includes(normalizedQuery)
-      )
-      .toSorted((a, b) => {
-        let result: number;
-        if (table.sort === 'name') result = a.name.localeCompare(b.name);
-        else if (table.sort === 'price') result = a.price - b.price;
-        else result = a.stock - b.stock;
+    return matching.slice().sort((a, b) => {
+      let result: number;
+      if (table.sort === 'name') result = a.name.localeCompare(b.name);
+      else if (table.sort === 'price') result = a.price - b.price;
+      else result = a.stock - b.stock;
 
-        return table.direction === 'asc' ? result : -result;
-      });
+      return table.direction === 'asc' ? result : -result;
+    });
   }, [query, table.direction, table.sort]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
