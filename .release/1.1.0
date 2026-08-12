@@ -1,4 +1,4 @@
 next-query-sync 1.1.0 one-shot release trigger
 
-This file intentionally triggers .github/workflows/publish.yml when merged to main.
+Retry 1: fix npm tarball path so npm treats the packed artifact as a local file.
 The workflow must publish npm successfully before it creates v1.1.0 and the GitHub Release.
