@@ -1,0 +1,77 @@
+name: Release candidate
+
+on:
+  workflow_dispatch:
+    inputs:
+      candidate_ref:
+        description: Branch, tag, or commit SHA to validate
+        required: true
+        default: main
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  candidate:
+    name: Verify and pack candidate
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout candidate ref
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.candidate_ref }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: packages/package-lock.json
+
+      - name: Verify library
+        working-directory: packages
+        run: |
+          npm ci
+          npm run typecheck
+          npm test
+          npm run build
+          npm run test:types
+
+      - name: Pack npm artifact
+        working-directory: packages
+        run: |
+          mkdir -p ../release-artifacts
+          npm pack --pack-destination ../release-artifacts
+
+      - name: Validate packed artifact in Next.js consumer
+        working-directory: integration/next-app
+        run: |
+          npm install --no-audit --no-fund
+          npm install --no-save --no-audit --no-fund ../../release-artifacts/next-query-sync-*.tgz
+          npm run build
+
+      - name: Write candidate summary
+        working-directory: packages
+        run: |
+          {
+            echo "## Release candidate"
+            echo
+            echo "- Requested ref: \`${{ inputs.candidate_ref }}\`"
+            echo "- Resolved commit: \`$(git rev-parse HEAD)\`"
+            echo "- Package: \`$(node -p \"require('./package.json').name + '@' + require('./package.json').version\")\`"
+            echo "- Deterministic package checks: passed"
+            echo "- Packed Next.js consumer build: passed"
+            echo "- Publication/tagging: not performed"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload npm tarball
+        uses: actions/upload-artifact@v4
+        with:
+          name: next-query-sync-release-candidate-${{ github.run_number }}
+          path: release-artifacts/*.tgz
+          if-no-files-found: error
+          retention-days: 14
