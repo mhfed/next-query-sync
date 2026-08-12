@@ -6,13 +6,17 @@ The project follows semantic versioning for published package releases.
 
 ## Unreleased
 
+No changes yet.
+
+## 1.1.0 - 2026-08-12
+
 ### Added
 
 - Add `parseAsStrictInteger` for complete base-10 safe-integer URL contracts without changing the existing `parseAsInteger` prefix behavior.
 - Add `parseAsStrictFloat` for complete finite decimal/scientific-notation URL contracts without changing the existing `parseAsFloat` prefix behavior.
 - Add explicit numeric parser semantics and edge-case/versioning documentation.
 - Add a realistic URL-backed data-table example combining debounced search, typed custom sort parsers, strict pagination, and explicit `push` / `replace` history intent.
-- Add a 1.0.1 → planned 1.1.0 migration guide covering compatibility-sensitive behavior and opt-in changes.
+- Add a 1.0.1 → 1.1.0 migration guide covering compatibility-sensitive behavior and opt-in changes.
 
 ### Fixed
 
