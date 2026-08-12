@@ -26,7 +26,7 @@ jobs:
           persist-credentials: false
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -40,6 +40,9 @@ jobs:
           npm test
           npm run build
           npm run verify:types
+          npm run verify:examples
+          npm audit --omit=dev --audit-level=high
+          npm audit --audit-level=critical
 
       - name: Pack npm artifact
         working-directory: packages
@@ -65,6 +68,8 @@ jobs:
             echo "- Resolved commit: \`$(git rev-parse HEAD)\`"
             echo "- Package: \`$PACKAGE_ID\`"
             echo "- Deterministic package checks: passed"
+            echo "- Consumer high+ audit: passed"
+            echo "- Full-tree critical audit: passed"
             echo "- Packed Next.js consumer build: passed"
             echo "- Publication/tagging: not performed"
           } >> "$GITHUB_STEP_SUMMARY"
