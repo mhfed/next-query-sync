@@ -49,6 +49,13 @@ export const parseAsString = makeParser<string>(
   (v) => v
 );
 
+/**
+ * Parses an integer using JavaScript's `parseInt` prefix semantics.
+ *
+ * This behavior is kept for backward compatibility. For URL contracts that
+ * must reject trailing characters, decimals, whitespace, unsafe integers, and
+ * non-decimal syntax, use `parseAsStrictInteger` instead.
+ */
 export const parseAsInteger = makeParser<number>(
   (v) => {
     if (v === null || v === '') return null;
@@ -58,6 +65,13 @@ export const parseAsInteger = makeParser<number>(
   (v) => Math.round(v).toString()
 );
 
+/**
+ * Parses a number using JavaScript's `parseFloat` prefix semantics.
+ *
+ * This behavior is kept for backward compatibility. For a finite decimal /
+ * scientific-notation contract that rejects trailing characters and
+ * non-decimal syntax, use `parseAsStrictFloat` instead.
+ */
 export const parseAsFloat = makeParser<number>(
   (v) => {
     if (v === null || v === '') return null;
@@ -65,6 +79,57 @@ export const parseAsFloat = makeParser<number>(
     return Number.isNaN(parsed) ? null : parsed;
   },
   (v) => v.toString()
+);
+
+const STRICT_INTEGER_PATTERN = /^[+-]?\d+$/;
+const STRICT_FLOAT_PATTERN = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$/;
+
+/**
+ * Parses a complete base-10 safe integer string.
+ *
+ * Accepted examples: `0`, `-12`, `+7`, `0012`.
+ * Rejected examples: `12px`, `3.14`, `1e3`, `0x10`, surrounding whitespace,
+ * and values outside JavaScript's safe-integer range.
+ *
+ * Serialization throws a RangeError when asked to serialize a value that is
+ * not a safe integer so `parse(serialize(value))` cannot silently change it.
+ */
+export const parseAsStrictInteger = makeParser<number>(
+  (v) => {
+    if (v === null || v === '' || !STRICT_INTEGER_PATTERN.test(v)) return null;
+    const parsed = Number(v);
+    return Number.isSafeInteger(parsed) ? parsed : null;
+  },
+  (v) => {
+    if (!Number.isSafeInteger(v)) {
+      throw new RangeError('parseAsStrictInteger can only serialize safe integers');
+    }
+    return v.toString();
+  }
+);
+
+/**
+ * Parses a complete finite decimal or scientific-notation number string.
+ *
+ * Accepted examples: `0`, `-1.5`, `.5`, `1.`, `1e3`, `-2.5E-2`.
+ * Rejected examples: `1.2px`, `Infinity`, `NaN`, `0x10`, and surrounding
+ * whitespace.
+ *
+ * Serialization throws a RangeError for NaN / Infinity so serialized output
+ * always remains within this parser's finite-number contract.
+ */
+export const parseAsStrictFloat = makeParser<number>(
+  (v) => {
+    if (v === null || v === '' || !STRICT_FLOAT_PATTERN.test(v)) return null;
+    const parsed = Number(v);
+    return Number.isFinite(parsed) ? parsed : null;
+  },
+  (v) => {
+    if (!Number.isFinite(v)) {
+      throw new RangeError('parseAsStrictFloat can only serialize finite numbers');
+    }
+    return v.toString();
+  }
 );
 
 export const parseAsBoolean = makeParser<boolean>(
@@ -130,4 +195,3 @@ export function withDefault<T>(
 ): ParserWithDefault<T> {
   return parser.withDefault(defaultValue);
 }
-
