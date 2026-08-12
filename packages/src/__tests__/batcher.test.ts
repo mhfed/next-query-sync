@@ -88,4 +88,40 @@ describe('scheduleUrlUpdate', () => {
 
     expect(window.location.href).not.toContain('?');
   });
+
+  it('preserves the hash fragment when replacing search params', async () => {
+    window.history.replaceState(null, '', '/docs?page=1#installation');
+    _resetBatcher();
+
+    scheduleUrlUpdate('page', '2');
+    await Promise.resolve();
+
+    expect(window.location.pathname).toBe('/docs');
+    expect(window.location.search).toBe('?page=2');
+    expect(window.location.hash).toBe('#installation');
+  });
+
+  it('preserves the hash fragment when pushing search params', async () => {
+    window.history.replaceState(null, '', '/docs#installation');
+    _resetBatcher();
+
+    scheduleUrlUpdate('page', '2', { history: 'push' });
+    await Promise.resolve();
+
+    expect(window.location.pathname).toBe('/docs');
+    expect(window.location.search).toBe('?page=2');
+    expect(window.location.hash).toBe('#installation');
+  });
+
+  it('preserves the hash fragment when clearing the final search param', async () => {
+    window.history.replaceState(null, '', '/docs?page=1#installation');
+    _resetBatcher();
+
+    scheduleUrlUpdate('page', null);
+    await Promise.resolve();
+
+    expect(window.location.pathname).toBe('/docs');
+    expect(window.location.search).toBe('');
+    expect(window.location.hash).toBe('#installation');
+  });
 });
