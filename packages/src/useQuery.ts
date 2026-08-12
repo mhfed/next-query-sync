@@ -233,8 +233,8 @@ export function useQueryState<T>(
   const urlValue = parser.parse(rawValue);
 
   // ── Debounce: optimistic pending value ────────────────────────────────────
-  // When debounce is set, we show the pending value immediately and delay the URL write.
-  const [pending, setPending] = useState<{ value: T } | null>(null);
+  // The wrapper distinguishes "no pending value" from an intentionally pending null.
+  const [pending, setPending] = useState<{ value: T | null } | null>(null);
 
   // Clear pending once the URL has caught up (rawValue changed after debounce fires)
   useEffect(() => {
@@ -253,8 +253,8 @@ export function useQueryState<T>(
     };
   }, []);
 
-  // The value consumers see: pending (optimistic) while debouncing, URL value otherwise
-  const value = pending !== null ? pending.value : (urlValue as T);
+  // The value consumers see: pending (optimistic) while debouncing, URL value otherwise.
+  const value = pending !== null ? pending.value : urlValue;
 
   // ── setValue ──────────────────────────────────────────────────────────────
   const setValue = useCallback(
@@ -281,8 +281,8 @@ export function useQueryState<T>(
       };
 
       if (debounceMs && debounceMs > 0) {
-        // Show pending value immediately (optimistic UI)
-        if (next !== null) setPending({ value: next });
+        // Show the pending value immediately, including an intentional null.
+        setPending({ value: next });
         // Debounce the actual URL write
         if (timerRef.current !== null) clearTimeout(timerRef.current);
         timerRef.current = setTimeout(() => {
