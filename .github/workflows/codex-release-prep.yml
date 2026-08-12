@@ -1,0 +1,45 @@
+name: Codex release preparation
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  release_audit:
+    runs-on: ubuntu-latest
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Run Codex release audit
+        id: run_codex
+        if: env.OPENAI_API_KEY != ''
+        uses: openai/codex-action@v1
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          prompt-file: .github/codex/prompts/release.md
+          output-file: codex-release-audit.md
+
+      - name: Add audit to workflow summary
+        if: steps.run_codex.outputs.final-message != ''
+        env:
+          CODEX_FINAL_MESSAGE: ${{ steps.run_codex.outputs.final-message }}
+        run: printf '%s\n' "$CODEX_FINAL_MESSAGE" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload release audit
+        if: steps.run_codex.outputs.final-message != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: codex-release-audit
+          path: codex-release-audit.md
+
+      - name: Explain skipped release audit
+        if: env.OPENAI_API_KEY == ''
+        run: echo "Codex release audit skipped because OPENAI_API_KEY is not configured."
