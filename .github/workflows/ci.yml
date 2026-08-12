@@ -55,6 +55,33 @@ jobs:
       - name: Verify package contents
         run: npm pack --dry-run
 
+  security:
+    name: Dependency security audit
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: packages/package-lock.json
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Consumer dependency audit (high+)
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Full maintainer dependency audit (critical)
+        run: npm audit --audit-level=critical
+
   react-compatibility:
     name: React ${{ matrix.react }} compatibility
     runs-on: ubuntu-latest
