@@ -26,13 +26,14 @@ This roadmap focuses on correctness, maintainability, real-world validation, and
 - [x] Validate the npm tarball from a consumer project rather than importing library source paths.
 - [x] Remove generated `packages/dist` artifacts from source control while keeping clean-clone public type verification self-contained.
 - [x] Add a production docs build to CI after building the local package dependency.
+- [x] Typecheck public examples against generated package declarations.
 
 ## Days 15–21 — documentation and real-world examples
 
 - [x] Add focused examples for search, pagination, sorting, tabs, and modal state.
 - [x] Rework the docs homepage/playground around behavior verified by tests and CI instead of competitor scorecards or unsupported performance claims.
 - [x] Deprecate the ineffective `startTransition` compatibility option without breaking existing callers.
-- [ ] Add a realistic table/filter example with URL-backed state.
+- [x] Add a realistic table/filter example with URL-backed state.
 - [x] Document project scope without unsupported competitor claims.
 - [ ] Add migration examples for users coming from manual `URLSearchParams` state management.
 - [ ] Collect reproducible feedback from real external projects and convert confirmed problems into issues/tests.
@@ -48,6 +49,9 @@ This roadmap focuses on correctness, maintainability, real-world validation, and
 
 - [x] Adopt a repeatable read-only release-candidate process with explicit maintainer approval before publication.
 - [x] Allow the Codex release audit to target the exact release candidate ref.
+- [x] Add a 1.0.1 → planned 1.1.0 migration guide before changing the published package version.
+- [ ] Produce and inspect a 1.1.0 release candidate artifact.
+- [ ] Publish 1.1.0 only after maintainer review of the candidate and final release notes.
 - [ ] Run the manual Codex release audit before a future package publication once project API access is configured.
 - [x] Maintain `CHANGELOG.md` with user-visible changes and maintenance evidence.
 - [ ] Publish maintenance metrics based on real repository activity: releases, issues resolved, external contributors/users, CI health, and useful Codex-assisted maintenance work.
@@ -57,5 +61,5 @@ This roadmap focuses on correctness, maintainability, real-world validation, and
 
 - Prefer real usage and reproducible maintenance evidence over vanity metrics.
 - Do not manufacture issues, contributors, stars, downloads, or adoption.
-- Keep deterministic CI authoritative for builds, types, tests, package consumers, and docs.
+- Keep deterministic CI authoritative for builds, types, tests, examples, package consumers, and docs.
 - Use AI review for repository-specific reasoning only when project API access is available; never make it a prerequisite for ordinary OSS maintenance.
