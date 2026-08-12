@@ -45,5 +45,92 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Public API type contracts
+        run: npm run test:types
+
       - name: Verify package contents
         run: npm pack --dry-run
+
+  react-compatibility:
+    name: React ${{ matrix.react }} compatibility
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - react: "18.3.1"
+            react_types: "18"
+          - react: "19.2.0"
+            react_types: "19"
+
+    defaults:
+      run:
+        working-directory: packages
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: packages/package-lock.json
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Install React compatibility target
+        run: >-
+          npm install --no-save --legacy-peer-deps
+          react@${{ matrix.react }}
+          react-dom@${{ matrix.react }}
+          @types/react@${{ matrix.react_types }}
+          @types/react-dom@${{ matrix.react_types }}
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Public API type contracts
+        run: npm run test:types
+
+  next-integration:
+    name: Next.js 16 LTS integration
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: packages/package-lock.json
+
+      - name: Build and pack library
+        working-directory: packages
+        run: |
+          npm ci
+          npm run build
+          npm run test:types
+          mkdir -p ../integration/next-app/vendor
+          npm pack --pack-destination ../integration/next-app/vendor
+
+      - name: Install integration fixture
+        working-directory: integration/next-app
+        run: |
+          npm install --no-audit --no-fund
+          npm install --no-save --no-audit --no-fund ./vendor/next-query-sync-*.tgz
+
+      - name: Build Next.js consumer
+        working-directory: integration/next-app
+        run: npm run build

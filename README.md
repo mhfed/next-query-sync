@@ -1,15 +1,15 @@
 # next-query-sync
 
-> A lightweight, **type-safe** URL search params state manager for Next.js — built with React 18 Concurrent Mode and production performance in mind.
+> A lightweight, **type-safe** URL search params state manager for Next.js — built around React's external-store model and a deliberately small API.
 
 ## Features
 
 - 🔒 **Type-safe**: TypeScript infers exact output types from your parser schema
 - ⚡ **Batched updates**: multiple param changes in one event loop → one `history` call
-- 🌐 **SSR-safe**: no crashes on the server (`window` guard throughout)
-- 🔄 **React 18 ready**: uses `useSyncExternalStore` — no UI tearing in Concurrent Mode
+- 🌐 **SSR-aware**: browser globals are guarded and defaulted parsers keep stable server values
+- 🔄 **React 18+ ready**: uses `useSyncExternalStore` for consistent URL snapshots
 - 📦 **Dual package**: ships both CJS and ESM builds with `.d.ts` typings
-- 🪶 **Zero runtime deps**: only a React 18+ peer dependency
+- 🪶 **Zero runtime dependencies**: React 18+ is a peer; Zod is an optional peer for schema integration
 
 ---
 
@@ -21,20 +21,25 @@ npm install next-query-sync
 pnpm add next-query-sync
 ```
 
+## Compatibility
+
+CI verifies the published package shape and public types on Node 20/22, React 18.3 and React 19.2, plus a packed-package build inside a Next.js 16.2 LTS App Router fixture.
+
+See [`COMPATIBILITY.md`](./COMPATIBILITY.md) for what is continuously tested and what remains outside the compatibility guarantee.
+
 ---
 
 ## Quick Start (Next.js App Router)
 
 ```tsx
 'use client'
-import { useQueryState, parseAsInteger, withDefault } from 'next-query-sync'
-import { Suspense } from 'react'
+import { useQueryState } from 'next-query-sync'
 
-function ProductList() {
+export default function ProductList() {
   const [page, setPage] = useQueryState(
     'page',
-    withDefault(parseAsInteger, 1),
-    { history: 'push' }   // creates browser history entries → Back button works
+    1,
+    { history: 'push' } // creates intentional history entries
   )
 
   return (
@@ -45,33 +50,24 @@ function ProductList() {
     </div>
   )
 }
-
-// ⚠️ Next.js App Router: wrap in Suspense when reading URL params
-export default function Page() {
-  return (
-    <Suspense fallback={<p>Loading…</p>}>
-      <ProductList />
-    </Suspense>
-  )
-}
 ```
 
 ---
 
 ## API Reference
 
-### `useQueryState(key, parser, options?)`
+### `useQueryState(key, parserOrDefault, options?)`
 
-Syncs a single URL search param with React state.
+Syncs a single URL search param with React state. The second argument can be a primitive default, a built-in/custom parser, or a supported Zod schema.
 
 ```ts
-const [value, setValue] = useQueryState(key, parser, options?)
+const [value, setValue] = useQueryState(key, parserOrDefault, options?)
 ```
 
 | Param | Type | Description |
 |---|---|---|
 | `key` | `string` | URL search param name |
-| `parser` | `Parser<T>` | Determines how to parse/serialize the value |
+| `parserOrDefault` | `Primitive \| Parser<T> \| ZodLike<T>` | Determines parsing/default behavior |
 | `options.history` | `'push' \| 'replace'` | Default: `'replace'` |
 
 ```tsx
@@ -133,19 +129,21 @@ const [page, setPage] = useQueryState('page', pageParser)
 
 ### Custom Parsers
 
-Implement the `Parser<T>` interface for any custom type:
+Use `makeParser` to create a parser with the same `.withDefault()` contract as the built-ins:
 
 ```ts
-import type { Parser } from 'next-query-sync'
+import { makeParser } from 'next-query-sync'
 
-const parseAsDate: Parser<Date> = {
-  parse: (v) => {
-    if (!v) return null
-    const d = new Date(v)
-    return isNaN(d.getTime()) ? null : d
+const parseAsDate = makeParser<Date>(
+  (value) => {
+    if (!value) return null
+    const date = new Date(value)
+    return Number.isNaN(date.getTime()) ? null : date
   },
-  serialize: (d) => d.toISOString().split('T')[0]!,
-}
+  (date) => date.toISOString().split('T')[0]!
+)
+
+const dateWithDefault = parseAsDate.withDefault(new Date('2026-01-01'))
 ```
 
 ---
@@ -166,11 +164,13 @@ Event handler
 
 ### SSR Safety
 
-Every access to `window` is guarded by `typeof window === 'undefined'`. `useSyncExternalStore`'s `getServerSnapshot` always returns `null`, so the hook renders correctly on the server without hydration mismatches.
+Browser access is guarded so importing and rendering the hooks does not require `window` during server execution. Defaulted parsers are evaluated against the server snapshot as well, keeping their non-null runtime contract on the server.
 
-### React 18 Concurrent Mode
+The Next.js integration fixture in CI server-renders an App Router page containing a client component that imports the **packed npm artifact**, which catches accidental source-only imports and common SSR/build regressions.
 
-`useSyncExternalStore` (React 18+) ensures that all components reading the same URL param see a **consistent snapshot** — no tearing when React interrupts and restarts renders.
+### React external-store model
+
+`useSyncExternalStore` (React 18+) keeps components reading URL state on a consistent external snapshot. CI exercises both React 18 and React 19 compatibility targets.
 
 ---
 
