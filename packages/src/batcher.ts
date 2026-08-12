@@ -48,9 +48,10 @@ export const scheduleUrlUpdate = (
       if (!batchedParams) return;
 
       const search = batchedParams.toString();
+      const hash = window.location.hash;
       const newUrl = search
-        ? `${window.location.pathname}?${search}`
-        : window.location.pathname;
+        ? `${window.location.pathname}?${search}${hash}`
+        : `${window.location.pathname}${hash}`;
 
       if (batchedHistory === 'push') {
         window.history.pushState(null, '', newUrl);
