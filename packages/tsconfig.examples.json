@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "declaration": false,
+    "declarationMap": false,
+    "sourceMap": false,
+    "baseUrl": ".",
+    "paths": {
+      "next-query-sync": ["./dist/index.d.ts"]
+    }
+  },
+  "include": ["../examples/**/*.tsx"],
+  "exclude": []
+}
