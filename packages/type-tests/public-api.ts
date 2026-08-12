@@ -1,5 +1,7 @@
 import {
   parseAsInteger,
+  parseAsStrictFloat,
+  parseAsStrictInteger,
   parseAsString,
   useQueryState,
   useQueryStates,
@@ -36,6 +38,18 @@ setNullableQuery('hello');
 setNullableQuery(null);
 setNullableQuery((current) => current?.toUpperCase() ?? null);
 
+const [strictPage, setStrictPage] = useQueryState(
+  'strictPage',
+  parseAsStrictInteger.withDefault(1)
+);
+type StrictPageIsNumber = Expect<Equal<typeof strictPage, number>>;
+setStrictPage(2);
+
+const [strictRatio, setStrictRatio] = useQueryState('ratio', parseAsStrictFloat);
+type StrictRatioIsNullable = Expect<Equal<typeof strictRatio, number | null>>;
+setStrictRatio(0.5);
+setStrictRatio(null);
+
 const [params, setParams] = useQueryStates({
   page: parseAsInteger.withDefault(1),
   q: parseAsString,
@@ -54,3 +68,5 @@ setParams({ page: null });
 void primitiveCount;
 void defaultedPage;
 void nullableQuery;
+void strictPage;
+void strictRatio;

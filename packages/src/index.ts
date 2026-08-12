@@ -4,6 +4,8 @@ export {
   parseAsString,
   parseAsInteger,
   parseAsFloat,
+  parseAsStrictInteger,
+  parseAsStrictFloat,
   parseAsBoolean,
   parseAsIsoDateTime,
   parseAsArrayOf,
