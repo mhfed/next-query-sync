@@ -34,9 +34,8 @@ jobs:
       - name: Verify manifest versions
         working-directory: packages
         run: |
-          test "$(node -p \"require('./package.json').version\")" = "1.1.0"
-          test "$(node -p \"require('./package-lock.json').version\")" = "1.1.0"
-          test "$(node -p \"require('./package-lock.json').packages[''].version\")" = "1.1.0"
+          test "$(npm pkg get version | tr -d '\"')" = "1.1.0"
+          node -e 'const lock=require("./package-lock.json"); if (lock.version !== "1.1.0" || lock.packages[""].version !== "1.1.0") process.exit(1)'
 
       - name: Commit only version manifests
         run: |
