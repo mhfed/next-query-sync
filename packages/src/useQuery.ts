@@ -1,7 +1,6 @@
 import {
   useCallback,
   useSyncExternalStore,
-  startTransition as reactStartTransition,
   useState,
   useEffect,
   useRef,
@@ -19,8 +18,9 @@ export interface UseQueryStateOptions {
    */
   debounce?: number;
   /**
-   * Wrap URL writes in `React.startTransition` so they are treated as
-   * non-urgent updates — prevents UI freezes when Next.js fetches new data.
+   * @deprecated URL state is exposed through `useSyncExternalStore`, whose
+   * external-store mutations cannot be made non-blocking Transition updates.
+   * This option is retained for source compatibility and is ignored at runtime.
    */
   startTransition?: boolean;
 }
@@ -180,15 +180,15 @@ export function useQueryState<T>(
  * const [search, setSearch] = useQueryState('search', '');
  * const [active, setActive] = useQueryState('active', false);
  *
- * // Method chaining (nuqs-compatible)
+ * // Method chaining
  * const [page, setPage]     = useQueryState('page', parseAsInteger.withDefault(1));
  * const [date, setDate]     = useQueryState('date', parseAsIsoDateTime.withDefault(new Date()));
  *
  * // Zod schema (auto JSON parse + validation + safe fallback)
  * const [filter, setFilter] = useQueryState('filter', FilterSchema.default({...}));
  *
- * // Debounce + startTransition (ideal for search inputs)
- * const [q, setQ] = useQueryState('q', '', { debounce: 300, startTransition: true });
+ * // Debounce URL writes for high-frequency state such as search input
+ * const [q, setQ] = useQueryState('q', '', { debounce: 300 });
  */
 export function useQueryState<T>(
   key: string,
@@ -196,7 +196,7 @@ export function useQueryState<T>(
   options: UseQueryStateOptions = {}
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): any {
-  const { history = 'replace', debounce: debounceMs, startTransition: useTransition } = options;
+  const { history = 'replace', debounce: debounceMs } = options;
 
   // ── Resolve parser ────────────────────────────────────────────────────────
   let parser: Parser<T>;
@@ -273,11 +273,7 @@ export function useQueryState<T>(
       }
 
       const doUpdate = () => {
-        if (useTransition) {
-          reactStartTransition(() => scheduleUrlUpdate(key, serialized, { history }));
-        } else {
-          scheduleUrlUpdate(key, serialized, { history });
-        }
+        scheduleUrlUpdate(key, serialized, { history });
       };
 
       if (debounceMs && debounceMs > 0) {
@@ -294,7 +290,7 @@ export function useQueryState<T>(
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [key, value, history, debounceMs, useTransition]
+    [key, value, history, debounceMs]
   );
 
   return [value, setValue];

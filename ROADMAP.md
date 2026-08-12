@@ -7,6 +7,7 @@ This roadmap focuses on correctness, maintainability, real-world validation, and
 - [x] Preserve URL hash fragments during query updates.
 - [x] Align `useQueryStates` defaulted-parser types with runtime behavior.
 - [x] Cancel pending debounced writes on unmount.
+- [x] Make nullable debounced clears optimistic while delaying the URL write.
 - [x] Add regression tests for the fixes above.
 - [x] Add CI for typecheck, tests, build, and package verification.
 - [x] Add contribution and security policies.
@@ -24,27 +25,30 @@ This roadmap focuses on correctness, maintainability, real-world validation, and
 - [x] Test React 18/19 targets and document the concrete Next.js compatibility gate.
 - [x] Validate the npm tarball from a consumer project rather than importing library source paths.
 - [x] Remove generated `packages/dist` artifacts from source control while keeping clean-clone public type verification self-contained.
+- [x] Add a production docs build to CI after building the local package dependency.
 
 ## Days 15–21 — documentation and real-world examples
 
 - [x] Add focused examples for search, pagination, sorting, tabs, and modal state.
+- [x] Rework the docs homepage/playground around behavior verified by tests and CI instead of competitor scorecards or unsupported performance claims.
+- [x] Deprecate the ineffective `startTransition` compatibility option without breaking existing callers.
 - [ ] Add a realistic table/filter example with URL-backed state.
-- [ ] Document tradeoffs and intended scope without unsupported competitor claims.
+- [x] Document project scope without unsupported competitor claims.
 - [ ] Add migration examples for users coming from manual `URLSearchParams` state management.
 - [ ] Collect reproducible feedback from real external projects and convert confirmed problems into issues/tests.
 
 ## Days 22–26 — maintainer automation
 
-- [ ] Configure `OPENAI_API_KEY` for the guarded Codex workflow when project API access is available.
-- [ ] Evaluate Codex PR reviews against human review outcomes and tune `AGENTS.md`/review prompts.
-- [ ] Add issue-triage automation only after a clear human-review boundary is defined.
-- [ ] Track useful review findings, false positives, and maintenance time saved.
+- [ ] Configure `OPENAI_API_KEY` for the guarded Codex workflow only when project API access/credits are available.
+- [ ] Evaluate Codex PR reviews against human review outcomes and tune `AGENTS.md`/review prompts once credits are available.
+- [ ] Add issue-triage automation only after a clear human-review boundary is defined and project API access exists.
+- [ ] Track useful review findings, false positives, and maintenance time saved once Codex review is actually enabled.
 
 ## Days 27–30 — release discipline and evidence
 
 - [x] Adopt a repeatable read-only release-candidate process with explicit maintainer approval before publication.
 - [x] Allow the Codex release audit to target the exact release candidate ref.
-- [ ] Run the manual Codex release audit before the next package publication once project API access is configured.
+- [ ] Run the manual Codex release audit before a future package publication once project API access is configured.
 - [x] Maintain `CHANGELOG.md` with user-visible changes and maintenance evidence.
 - [ ] Publish maintenance metrics based on real repository activity: releases, issues resolved, external contributors/users, CI health, and useful Codex-assisted maintenance work.
 - [ ] Review the next 30-day roadmap from actual user feedback rather than star-count targets.
@@ -53,5 +57,5 @@ This roadmap focuses on correctness, maintainability, real-world validation, and
 
 - Prefer real usage and reproducible maintenance evidence over vanity metrics.
 - Do not manufacture issues, contributors, stars, downloads, or adoption.
-- Keep deterministic CI authoritative for builds, types, and tests.
-- Use AI review for repository-specific reasoning, not as a substitute for deterministic checks or maintainer approval.
+- Keep deterministic CI authoritative for builds, types, tests, package consumers, and docs.
+- Use AI review for repository-specific reasoning only when project API access is available; never make it a prerequisite for ordinary OSS maintenance.
