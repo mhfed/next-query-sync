@@ -4,12 +4,13 @@
 
 ## Features
 
-- 🔒 **Type-safe**: TypeScript infers exact output types from your parser schema
-- ⚡ **Batched updates**: multiple param changes in one event loop → one `history` call
-- 🌐 **SSR-aware**: browser globals are guarded and defaulted parsers keep stable server values
-- 🔄 **React 18+ ready**: uses `useSyncExternalStore` for consistent URL snapshots
-- 📦 **Dual package**: ships both CJS and ESM builds with `.d.ts` typings
-- 🪶 **Zero runtime dependencies**: React 18+ is a peer; Zod is an optional peer for schema integration
+- 🔒 **Type-safe**: TypeScript infers output/nullability from primitive defaults and parser contracts
+- ⚡ **Batched updates**: synchronous param changes are coalesced before a history write
+- 🔎 **Optimistic debounce**: hook state can update immediately while URL writes wait for the debounce interval
+- ↩️ **History-aware**: `push` / `replace` intent plus `popstate` Back/Forward subscriptions
+- 🌐 **SSR-aware**: browser globals are guarded and a packed Next.js App Router consumer builds in CI
+- 📦 **Dual package**: ships CJS, ESM and `.d.ts` typings
+- 🪶 **No regular runtime dependencies**: React 18+ is a peer; Zod is an optional peer
 
 ---
 
@@ -23,24 +24,22 @@ pnpm add next-query-sync
 
 ## Compatibility
 
-CI verifies the published package shape and public types on Node 20/22, React 18.3 and React 19.2, plus a packed-package build inside a Next.js 16.2 LTS App Router fixture.
+CI verifies the package shape and public types on Node 20/22, React 18.3 and React 19.2, plus a packed-package build inside a Next.js 16.2 LTS App Router fixture and a production build of the docs application.
 
-See [`COMPATIBILITY.md`](./COMPATIBILITY.md) for what is continuously tested and what remains outside the compatibility guarantee.
+See [`COMPATIBILITY.md`](./COMPATIBILITY.md) for the continuously tested surface.
 
 ---
 
-## Quick Start (Next.js App Router)
+## Quick Start
 
 ```tsx
 'use client'
 import { useQueryState } from 'next-query-sync'
 
 export default function ProductList() {
-  const [page, setPage] = useQueryState(
-    'page',
-    1,
-    { history: 'push' } // creates intentional history entries
-  )
+  const [page, setPage] = useQueryState('page', 1, {
+    history: 'push',
+  })
 
   return (
     <div>
@@ -54,14 +53,14 @@ export default function ProductList() {
 
 ## Real-world examples
 
-The [`examples/`](./examples) directory contains copy-paste App Router patterns with explicit URL and history semantics:
+The [`examples/`](./examples) directory contains copy-paste App Router patterns with explicit URL/history semantics:
 
 - [Debounced search](./examples/debounced-search.tsx) — `?q=react`
 - [Product catalog filters + pagination](./examples/product-catalog.tsx) — `?page=2&sort=price&inStock=true`
 - [URL-backed tabs](./examples/url-tabs.tsx) — `?tab=activity`
 - [Shareable modal/detail state](./examples/shareable-modal.tsx) — `?item=sku-42`
 
-Use `replace` for high-frequency state where intermediate history entries are noise, and `push` for state changes users reasonably expect Back/Forward to traverse. See the examples index for the tradeoffs.
+Use `replace` for high-frequency state where intermediate history entries are noise, and `push` for changes users reasonably expect Back/Forward to traverse.
 
 ---
 
@@ -69,121 +68,138 @@ Use `replace` for high-frequency state where intermediate history entries are no
 
 ### `useQueryState(key, parserOrDefault, options?)`
 
-Syncs a single URL search param with React state. The second argument can be a primitive default, a built-in/custom parser, or a supported Zod schema.
-
-```ts
-const [value, setValue] = useQueryState(key, parserOrDefault, options?)
-```
+The second argument can be a primitive default, a built-in/custom parser, or a supported Zod schema.
 
 | Param | Type | Description |
 |---|---|---|
 | `key` | `string` | URL search param name |
 | `parserOrDefault` | `Primitive \| Parser<T> \| ZodLike<T>` | Determines parsing/default behavior |
 | `options.history` | `'push' \| 'replace'` | Default: `'replace'` |
+| `options.debounce` | `number` | Delay URL writes while exposing optimistic pending state |
+| `options.startTransition` | `boolean` | **Deprecated compatibility option.** Accepted but ignored; do not rely on it for non-blocking external-store updates |
 
 ```tsx
 const [search, setSearch] = useQueryState('q', parseAsString)
 // search: string | null
-// setSearch('hello')        → ?q=hello
-// setSearch(null)           → removes ?q from URL
-// setSearch(v => v + '!')   → functional updater
-```
+// setSearch('hello') → ?q=hello
+// setSearch(null)    → removes q
 
----
+const [query, setQuery] = useQueryState('q', '', { debounce: 300 })
+// query changes immediately; URL write waits 300 ms
+```
 
 ### `useQueryStates(schema, options?)`
 
-Syncs multiple URL params at once. All updates in one `setValues` call are coalesced into a **single URL write**.
+Sync multiple URL params from one parser schema. Keys changed by one `setValues` call enter the same URL batch.
 
 ```tsx
 const [params, setParams] = useQueryStates({
-  page:   withDefault(parseAsInteger, 1),
+  page: withDefault(parseAsInteger, 1),
   search: parseAsString,
-  tags:   parseAsArrayOf(parseAsString),
+  tags: parseAsArrayOf(parseAsString),
 })
 
-// params.page   → number       (default: 1, never null)
+// params.page   → number
 // params.search → string | null
 // params.tags   → string[] | null
 
-setParams({ page: 2, search: 'react' })  // single history entry
+setParams({ page: 2, search: 'react' })
 ```
 
 ---
 
-### Built-in Parsers
+## Built-in parsers
 
-| Parser | URL value | JS value |
-|---|---|---|
-| `parseAsString` | `"hello"` | `"hello"` |
-| `parseAsInteger` | `"42"` | `42` |
-| `parseAsFloat` | `"3.14"` | `3.14` |
-| `parseAsBoolean` | `"true"` / `"false"` | `true` / `false` |
-| `parseAsArrayOf(p)` | `"a,b,c"` | `["a","b","c"]` |
+| Parser | Contract |
+|---|---|
+| `parseAsString` | raw string / `null` |
+| `parseAsInteger` | backward-compatible `parseInt` prefix semantics |
+| `parseAsFloat` | backward-compatible `parseFloat` prefix semantics |
+| `parseAsStrictInteger` | complete base-10 **safe integer** only |
+| `parseAsStrictFloat` | complete finite decimal / scientific-notation number only |
+| `parseAsBoolean` | only `"true"` / `"false"` |
+| `parseAsIsoDateTime` | valid `Date` from a date-time string |
+| `parseAsArrayOf(p)` | separator-delimited values parsed by `p` |
 
----
-
-### `withDefault(parser, defaultValue)`
-
-Wraps any parser so that missing/unparseable values return `defaultValue` instead of `null`. TypeScript will narrow the return type to `T` (no null).
+For new numeric URL contracts where `42px` should be rejected rather than interpreted as a numeric prefix, use the strict parsers:
 
 ```ts
-const pageParser = withDefault(parseAsInteger, 1)
-// pageParser.parse(null) → 1
-// pageParser.parse('5')  → 5
+parseAsInteger.parse('42px')       // 42 (legacy compatibility)
+parseAsStrictInteger.parse('42px') // null
 
-const [page, setPage] = useQueryState('page', pageParser)
-// page: number  ← TypeScript knows this is never null
+parseAsFloat.parse('1.5rem')       // 1.5 (legacy compatibility)
+parseAsStrictFloat.parse('1.5rem') // null
 ```
 
----
+`parseAsStrictInteger` rejects values outside JavaScript's safe-integer range. Its serializer throws for non-safe-integers. `parseAsStrictFloat` rejects non-finite values and its serializer throws for `NaN` / `±Infinity`.
 
-### Custom Parsers
+See [`PARSER_SEMANTICS.md`](./PARSER_SEMANTICS.md) for the accepted grammar, edge cases and versioning rationale.
 
-Use `makeParser` to create a parser with the same `.withDefault()` contract as the built-ins:
+### Defaults
+
+Every parser supports `.withDefault(value)`:
+
+```ts
+const pageParser = parseAsStrictInteger.withDefault(1)
+
+pageParser.parse(null)     // 1
+pageParser.parse('5')      // 5
+pageParser.parse('5px')    // 1
+
+const [page, setPage] = useQueryState('page', pageParser)
+// page: number (never null)
+```
+
+The standalone `withDefault(parser, value)` helper remains available for backward compatibility.
+
+### Custom parsers
+
+Prefer `makeParser` so the required `.withDefault()` contract is attached automatically:
 
 ```ts
 import { makeParser } from 'next-query-sync'
 
 const parseAsDate = makeParser<Date>(
-  (value) => {
+  value => {
     if (!value) return null
     const date = new Date(value)
     return Number.isNaN(date.getTime()) ? null : date
   },
-  (date) => date.toISOString().split('T')[0]!
+  date => date.toISOString().slice(0, 10),
 )
-
-const dateWithDefault = parseAsDate.withDefault(new Date('2026-01-01'))
 ```
 
 ---
 
-## How It Works
+## How it works
 
 ### Batching
 
-`queueMicrotask` is used to defer the actual `history.replaceState` / `history.pushState` call. Multiple synchronous updates (e.g. calling `setPage(2)` and `setSearch('react')` in the same handler) are merged into **one URL write**:
+`queueMicrotask` defers the history mutation so synchronous updates can be coalesced:
 
-```
-Event handler
-  setPage(2)      → scheduleUrlUpdate('page', '2')   ─┐ same microtask batch
-  setSearch('q')  → scheduleUrlUpdate('search', 'q') ─┘
-                                                        ↓
-                                             history.replaceState(…?page=2&search=q)
+```text
+setPage(2)      ─┐
+setSearch('q')  ─┴─> one history write for the batch
 ```
 
-### SSR Safety
+### SSR / package boundary
 
-Browser access is guarded so importing and rendering the hooks does not require `window` during server execution. Defaulted parsers are evaluated against the server snapshot as well, keeping their non-null runtime contract on the server.
-
-The Next.js integration fixture in CI server-renders an App Router page containing a client component that imports the **packed npm artifact**, which catches accidental source-only imports and common SSR/build regressions.
+Browser access is guarded during server execution. CI also builds a Next.js App Router fixture that installs the **packed npm artifact**, which catches accidental source-only imports and common package/SSR build regressions.
 
 ### React external-store model
 
-`useSyncExternalStore` (React 18+) keeps components reading URL state on a consistent external snapshot. CI exercises both React 18 and React 19 compatibility targets.
+`useSyncExternalStore` keeps URL readers subscribed to the same external snapshot. CI exercises React 18 and React 19 targets, plus explicit `popstate` regression coverage.
 
 ---
+
+## Maintainer docs
+
+- [`COMPATIBILITY.md`](./COMPATIBILITY.md)
+- [`PARSER_SEMANTICS.md`](./PARSER_SEMANTICS.md)
+- [`CONTRIBUTING.md`](./CONTRIBUTING.md)
+- [`SECURITY.md`](./SECURITY.md)
+- [`RELEASING.md`](./RELEASING.md)
+- [`ROADMAP.md`](./ROADMAP.md)
 
 ## License
 
