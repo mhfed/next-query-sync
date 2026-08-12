@@ -1,24 +1,33 @@
 import { useCallback, useSyncExternalStore } from 'react';
 import { subscribe } from './emitter';
 import { scheduleUrlUpdate, type HistoryMode } from './batcher';
-import type { Parser } from './parsers';
+import type { Parser, ParserWithDefault } from './parsers';
 
 // ---------------------------------------------------------------------------
 // Type utilities
 // ---------------------------------------------------------------------------
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type ParsedValue<P extends Parser<any>> = P extends ParserWithDefault<infer T>
+  ? T
+  : P extends Parser<infer T>
+    ? T | null
+    : never;
+
 /** Infers the value type of each parser in a schema object. */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type ParsedValues<Schema extends Record<string, Parser<any>>> = {
-  [K in keyof Schema]: Schema[K] extends Parser<infer T> ? T | null : never;
+  [K in keyof Schema]: ParsedValue<Schema[K]>;
 };
 
 /** Partial updater object for useQueryStates. */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type PartialUpdater<Schema extends Record<string, Parser<any>>> = Partial<{
-  [K in keyof Schema]: Schema[K] extends Parser<infer T>
-    ? T | null | ((prev: T | null) => T | null)
-    : never;
+  [K in keyof Schema]: Schema[K] extends ParserWithDefault<infer T>
+    ? T | ((prev: T) => T)
+    : Schema[K] extends Parser<infer T>
+      ? T | null | ((prev: T | null) => T | null)
+      : never;
 }>;
 
 export interface UseQueryStatesOptions {
@@ -34,7 +43,7 @@ export interface UseQueryStatesOptions {
  *   page: withDefault(parseAsInteger, 1),
  *   search: parseAsString,
  * });
- * // params.page → number | null
+ * // params.page → number
  * // params.search → string | null
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -58,18 +67,13 @@ export function useQueryStates<Schema extends Record<string, Parser<any>>>(
 
   useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
-  // Parse current values from the live URL (safe in client, null on server)
+  // Parse current values from the live URL. On the server, parsing `null`
+  // preserves ParserWithDefault semantics instead of forcing every value null.
   const values = {} as ParsedValues<Schema>;
-  if (typeof window !== 'undefined') {
-    const sp = new URLSearchParams(window.location.search);
-    for (const key of schemaKeys) {
-      const parser = schema[key] as Parser<unknown>;
-      (values as Record<string, unknown>)[key] = parser.parse(sp.get(key));
-    }
-  } else {
-    for (const key of schemaKeys) {
-      (values as Record<string, unknown>)[key] = null;
-    }
+  const sp = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+  for (const key of schemaKeys) {
+    const parser = schema[key] as Parser<unknown>;
+    (values as Record<string, unknown>)[key] = parser.parse(sp?.get(key) ?? null);
   }
 
   const setValues = useCallback(
