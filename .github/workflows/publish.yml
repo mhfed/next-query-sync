@@ -1,0 +1,122 @@
+name: Publish next-query-sync 1.1.0
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .release/1.1.0
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  id-token: write
+
+concurrency:
+  group: publish-next-query-sync-1.1.0
+  cancel-in-progress: false
+
+env:
+  PACKAGE_NAME: next-query-sync
+  RELEASE_VERSION: 1.1.0
+  RELEASE_TAG: v1.1.0
+  NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+jobs:
+  publish:
+    name: Verify, publish, and create release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout release commit
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          package-manager-cache: false
+
+      - name: Ensure npm supports trusted publishing
+        run: npm install --global npm@^11.5.1
+
+      - name: Guard release version and duplicate publication
+        working-directory: packages
+        run: |
+          ACTUAL_VERSION=$(node -p "require('./package.json').version")
+          test "$ACTUAL_VERSION" = "$RELEASE_VERSION"
+          if npm view "$PACKAGE_NAME@$RELEASE_VERSION" version --json >/tmp/existing-version.json 2>/dev/null; then
+            echo "::error::$PACKAGE_NAME@$RELEASE_VERSION already exists on npm; refusing a duplicate publish."
+            cat /tmp/existing-version.json
+            exit 1
+          fi
+
+      - name: Install locked dependencies
+        working-directory: packages
+        run: npm ci --no-audit --no-fund
+
+      - name: Verify release source
+        working-directory: packages
+        run: |
+          npm run typecheck
+          npm test
+          npm run build
+          npm run verify:types
+          npm run verify:examples
+          npm audit --omit=dev --audit-level=high
+          npm audit --audit-level=critical
+
+      - name: Pack exact release artifact
+        working-directory: packages
+        run: |
+          mkdir -p ../release-artifacts
+          npm pack --pack-destination ../release-artifacts
+          test -f "../release-artifacts/$PACKAGE_NAME-$RELEASE_VERSION.tgz"
+
+      - name: Validate packed artifact in Next.js consumer
+        working-directory: integration/next-app
+        run: |
+          npm install --no-audit --no-fund
+          npm install --no-save --no-audit --no-fund "../../release-artifacts/$PACKAGE_NAME-$RELEASE_VERSION.tgz"
+          npm run build
+
+      - name: Configure npm token fallback when available
+        if: env.NPM_TOKEN != ''
+        run: echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > "$HOME/.npmrc"
+
+      - name: Publish exact tarball to npm
+        run: npm publish "release-artifacts/$PACKAGE_NAME-$RELEASE_VERSION.tgz" --access public --provenance
+
+      - name: Verify npm publication
+        run: |
+          PUBLISHED=$(npm view "$PACKAGE_NAME@$RELEASE_VERSION" version)
+          test "$PUBLISHED" = "$RELEASE_VERSION"
+
+      - name: Create GitHub tag and release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            echo "::error::GitHub Release $RELEASE_TAG already exists; refusing to overwrite it."
+            exit 1
+          fi
+          gh release create "$RELEASE_TAG" \
+            "release-artifacts/$PACKAGE_NAME-$RELEASE_VERSION.tgz" \
+            --target "$GITHUB_SHA" \
+            --title "$PACKAGE_NAME $RELEASE_VERSION" \
+            --notes-file RELEASE_NOTES_1.1.0.md
+
+      - name: Release summary
+        run: |
+          {
+            echo "## Published"
+            echo
+            echo "- npm: \`$PACKAGE_NAME@$RELEASE_VERSION\`"
+            echo "- Git tag: \`$RELEASE_TAG\`"
+            echo "- GitHub Release: created"
+            echo "- Provenance: requested during npm publish"
+            echo "- Source commit: \`$GITHUB_SHA\`"
+          } >> "$GITHUB_STEP_SUMMARY"
