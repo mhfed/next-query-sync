@@ -24,9 +24,9 @@ pnpm add next-query-sync
 
 ## Compatibility
 
-CI verifies the package shape and public types on Node 20/22, React 18.3 and React 19.2, plus a packed-package build inside a Next.js 16.2 LTS App Router fixture and a production build of the docs application.
+CI verifies the package shape and public types on Node 20/22, React 18.3 and React 19.2, plus a packed-package build inside a Next.js 16.2 LTS App Router fixture, public example typechecks, and a production build of the docs application.
 
-See [`COMPATIBILITY.md`](./COMPATIBILITY.md) for the continuously tested surface.
+See [`COMPATIBILITY.md`](./COMPATIBILITY.md) for the continuously tested surface. If you are upgrading from 1.0.1, see [`MIGRATION.md`](./MIGRATION.md) for the planned 1.1.0 compatibility notes.
 
 ---
 
@@ -57,6 +57,7 @@ The [`examples/`](./examples) directory contains copy-paste App Router patterns 
 
 - [Debounced search](./examples/debounced-search.tsx) — `?q=react`
 - [Product catalog filters + pagination](./examples/product-catalog.tsx) — `?page=2&sort=price&inStock=true`
+- [URL-backed data table](./examples/data-table.tsx) — `?q=usb&sort=price&direction=desc&page=2`
 - [URL-backed tabs](./examples/url-tabs.tsx) — `?tab=activity`
 - [Shareable modal/detail state](./examples/shareable-modal.tsx) — `?item=sku-42`
 
@@ -195,6 +196,7 @@ Browser access is guarded during server execution. CI also builds a Next.js App 
 ## Maintainer docs
 
 - [`COMPATIBILITY.md`](./COMPATIBILITY.md)
+- [`MIGRATION.md`](./MIGRATION.md)
 - [`PARSER_SEMANTICS.md`](./PARSER_SEMANTICS.md)
 - [`CONTRIBUTING.md`](./CONTRIBUTING.md)
 - [`SECURITY.md`](./SECURITY.md)

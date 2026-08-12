@@ -23,6 +23,7 @@
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "verify:types": "tsc -p tsconfig.public-api.json --noEmit",
+    "verify:examples": "tsc -p tsconfig.examples.json --noEmit",
     "test:types": "npm run build && npm run verify:types",
     "prepublishOnly": "npm run typecheck && npm run test && npm run test:types"
   },
