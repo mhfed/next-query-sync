@@ -52,6 +52,17 @@ export default function ProductList() {
 }
 ```
 
+## Real-world examples
+
+The [`examples/`](./examples) directory contains copy-paste App Router patterns with explicit URL and history semantics:
+
+- [Debounced search](./examples/debounced-search.tsx) — `?q=react`
+- [Product catalog filters + pagination](./examples/product-catalog.tsx) — `?page=2&sort=price&inStock=true`
+- [URL-backed tabs](./examples/url-tabs.tsx) — `?tab=activity`
+- [Shareable modal/detail state](./examples/shareable-modal.tsx) — `?item=sku-42`
+
+Use `replace` for high-frequency state where intermediate history entries are noise, and `push` for state changes users reasonably expect Back/Forward to traverse. See the examples index for the tradeoffs.
+
 ---
 
 ## API Reference
