@@ -46,7 +46,7 @@ jobs:
         run: npm run build
 
       - name: Public API type contracts
-        run: npm run test:types
+        run: npm run verify:types
 
       - name: Verify package contents
         run: npm pack --dry-run
@@ -99,7 +99,7 @@ jobs:
         run: npm run build
 
       - name: Public API type contracts
-        run: npm run test:types
+        run: npm run verify:types
 
   next-integration:
     name: Next.js 16 LTS integration
@@ -121,7 +121,7 @@ jobs:
         run: |
           npm ci
           npm run build
-          npm run test:types
+          npm run verify:types
           mkdir -p ../integration/next-app/vendor
           npm pack --pack-destination ../integration/next-app/vendor
 
