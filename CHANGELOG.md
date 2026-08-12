@@ -13,6 +13,10 @@ The project follows semantic versioning for published package releases.
 - Cancel pending debounced URL writes when a hook unmounts.
 - Make debounced nullable updates optimistic when clearing a query value to `null`, while still delaying the URL write until the debounce interval expires.
 
+### Deprecated
+
+- `UseQueryStateOptions.startTransition` is retained for source compatibility but no longer promises non-blocking URL-store updates. URL state is exposed through `useSyncExternalStore`, so callers should not rely on this option as a concurrency/performance primitive.
+
 ### Maintenance
 
 - Add automated typecheck, test, build, and package verification on pull requests.
