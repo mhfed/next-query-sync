@@ -57,12 +57,13 @@ jobs:
       - name: Write candidate summary
         working-directory: packages
         run: |
+          PACKAGE_ID=$(node -p "require('./package.json').name + '@' + require('./package.json').version")
           {
             echo "## Release candidate"
             echo
             echo "- Requested ref: \`${{ inputs.candidate_ref }}\`"
             echo "- Resolved commit: \`$(git rev-parse HEAD)\`"
-            echo "- Package: \`$(node -p \"require('./package.json').name + '@' + require('./package.json').version\")\`"
+            echo "- Package: \`$PACKAGE_ID\`"
             echo "- Deterministic package checks: passed"
             echo "- Packed Next.js consumer build: passed"
             echo "- Publication/tagging: not performed"
