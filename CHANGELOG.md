@@ -15,7 +15,7 @@ The project follows semantic versioning for published package releases.
 ### Maintenance
 
 - Add automated typecheck, test, build, and package verification on pull requests.
-- Add regression coverage for query batching, defaulted multi-state parsing, and debounce cleanup.
+- Add regression coverage for query batching, defaulted multi-state parsing, debounce cleanup, and browser `popstate` restoration for single/multi query-state hooks.
 - Add compile-time public API contracts for nullable/defaulted hook values and setters.
 - Add CI compatibility gates for React 18.3 and React 19.2.
 - Add a Next.js 16.2 LTS App Router fixture that installs the packed npm artifact and runs a production build.
