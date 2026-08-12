@@ -27,7 +27,7 @@ This roadmap focuses on correctness, maintainability, real-world validation, and
 
 ## Days 15–21 — documentation and real-world examples
 
-- [ ] Add focused examples for search, pagination, sorting, tabs, and modal state.
+- [x] Add focused examples for search, pagination, sorting, tabs, and modal state.
 - [ ] Add a realistic table/filter example with URL-backed state.
 - [ ] Document tradeoffs and intended scope without unsupported competitor claims.
 - [ ] Add migration examples for users coming from manual `URLSearchParams` state management.
