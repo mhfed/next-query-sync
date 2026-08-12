@@ -20,6 +20,7 @@ The project follows semantic versioning for published package releases.
 - Add CI compatibility gates for React 18.3 and React 19.2.
 - Add a Next.js 16.2 LTS App Router fixture that installs the packed npm artifact and runs a production build.
 - Add an explicit compatibility matrix describing continuously verified environments and remaining browser-level coverage.
+- Add copy-paste App Router examples for debounced search, product filters/pagination, URL-backed tabs, and shareable modal state with explicit `push`/`replace` guidance.
 - Add a read-only release-candidate workflow that validates an explicit git ref, packs the npm artifact, verifies it in the Next.js consumer, and uploads the tarball for maintainer inspection.
 - Allow the guarded Codex release audit to check out and report the exact release-candidate ref.
 - Add maintainer release documentation that keeps npm publication and Git tagging behind explicit human approval.
