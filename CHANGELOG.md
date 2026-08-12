@@ -39,6 +39,11 @@ The project follows semantic versioning for published package releases.
 - Rework the docs homepage and interactive examples around tested project behavior, removing unsupported competitor scorecards, bundle-size claims, stale version marketing, and `startTransition` performance claims.
 - Align the npm README with the current compatibility/deprecation/parser contracts.
 - Add a production docs build to CI after building the local `next-query-sync` package dependency from source.
+- Add separate consumer high+ and full-tree critical npm audit gates and repeat them in the release-candidate workflow.
+- Upgrade the test runner to Vitest 4.1.10, refresh the lockfile, and reduce the pre-release audit baseline from 9 findings (including 1 critical) to one documented low-severity development-only esbuild advisory while the consumer audit reports 0 vulnerabilities.
+- Load the Vitest configuration explicitly as ESM (`vitest.config.mts`) to match the Vitest 4 / Vite configuration model.
+- Move `actions/checkout` and `actions/setup-node` workflows from v4 to v5 so those actions run on their Node 24 runtime instead of the deprecated Node 20 runtime.
+- Add `DEPENDENCY_SECURITY.md` with the release audit thresholds, remediation evidence, and the remaining low-severity development-only advisory.
 - Add a read-only release-candidate workflow that validates an explicit git ref, packs the npm artifact, verifies it in the Next.js consumer, and uploads the tarball for maintainer inspection.
 - Allow the guarded Codex release audit to check out and report the exact release-candidate ref.
 - Add maintainer release documentation that keeps npm publication and Git tagging behind explicit human approval.
