@@ -11,11 +11,12 @@ The project follows semantic versioning for published package releases.
 - Preserve URL hash fragments when search parameters are updated or cleared.
 - Preserve non-null `ParserWithDefault<T>` semantics in `useQueryStates` types and server-side default parsing.
 - Cancel pending debounced URL writes when a hook unmounts.
+- Make debounced nullable updates optimistic when clearing a query value to `null`, while still delaying the URL write until the debounce interval expires.
 
 ### Maintenance
 
 - Add automated typecheck, test, build, and package verification on pull requests.
-- Add regression coverage for query batching, defaulted multi-state parsing, debounce cleanup, and browser `popstate` restoration for single/multi query-state hooks.
+- Add regression coverage for query batching, defaulted multi-state parsing, debounce cleanup, browser `popstate` restoration, and optimistic debounced clearing.
 - Add compile-time public API contracts for nullable/defaulted hook values and setters.
 - Add CI compatibility gates for React 18.3 and React 19.2.
 - Add a Next.js 16.2 LTS App Router fixture that installs the packed npm artifact and runs a production build.
