@@ -244,6 +244,15 @@ export function useQueryState<T>(
 
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  useEffect(() => {
+    return () => {
+      if (timerRef.current !== null) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, []);
+
   // The value consumers see: pending (optimistic) while debouncing, URL value otherwise
   const value = pending !== null ? pending.value : (urlValue as T);
 
@@ -276,7 +285,10 @@ export function useQueryState<T>(
         if (next !== null) setPending({ value: next });
         // Debounce the actual URL write
         if (timerRef.current !== null) clearTimeout(timerRef.current);
-        timerRef.current = setTimeout(doUpdate, debounceMs);
+        timerRef.current = setTimeout(() => {
+          timerRef.current = null;
+          doUpdate();
+        }, debounceMs);
       } else {
         doUpdate();
       }
