@@ -11,6 +11,8 @@ The project follows semantic versioning for published package releases.
 - Add `parseAsStrictInteger` for complete base-10 safe-integer URL contracts without changing the existing `parseAsInteger` prefix behavior.
 - Add `parseAsStrictFloat` for complete finite decimal/scientific-notation URL contracts without changing the existing `parseAsFloat` prefix behavior.
 - Add explicit numeric parser semantics and edge-case/versioning documentation.
+- Add a realistic URL-backed data-table example combining debounced search, typed custom sort parsers, strict pagination, and explicit `push` / `replace` history intent.
+- Add a 1.0.1 → planned 1.1.0 migration guide covering compatibility-sensitive behavior and opt-in changes.
 
 ### Fixed
 
@@ -28,6 +30,7 @@ The project follows semantic versioning for published package releases.
 - Add automated typecheck, test, build, and package verification on pull requests.
 - Add regression coverage for query batching, defaulted multi-state parsing, debounce cleanup, browser `popstate` restoration, optimistic debounced clearing, and strict numeric parser edge cases.
 - Add compile-time public API contracts for nullable/defaulted hook values, setters, and strict numeric parser exports.
+- Add CI typechecking for every public `.tsx` example against the generated declaration entry point.
 - Add CI compatibility gates for React 18.3 and React 19.2.
 - Add a Next.js 16.2 LTS App Router fixture that installs the packed npm artifact and runs a production build.
 - Add an explicit compatibility matrix describing continuously verified environments and remaining browser-level coverage.
